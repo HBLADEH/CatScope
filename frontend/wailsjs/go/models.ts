@@ -45,6 +45,56 @@ export namespace adb {
 
 export namespace logcat {
 	
+	export class AnalysisResult {
+	    id: string;
+	    type: string;
+	    severity: string;
+	    title: string;
+	    summary: string;
+	    packageName?: string;
+	    pid?: number;
+	    tid?: number;
+	    timestamp?: string;
+	    primaryTag?: string;
+	    primaryMessage?: string;
+	    exceptionType?: string;
+	    threadName?: string;
+	    signal?: string;
+	    libraryName?: string;
+	    reason?: string;
+	    keyFrames?: string[];
+	    relatedEntryIds?: number[];
+	    rawText?: string;
+	    suggestions?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new AnalysisResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.severity = source["severity"];
+	        this.title = source["title"];
+	        this.summary = source["summary"];
+	        this.packageName = source["packageName"];
+	        this.pid = source["pid"];
+	        this.tid = source["tid"];
+	        this.timestamp = source["timestamp"];
+	        this.primaryTag = source["primaryTag"];
+	        this.primaryMessage = source["primaryMessage"];
+	        this.exceptionType = source["exceptionType"];
+	        this.threadName = source["threadName"];
+	        this.signal = source["signal"];
+	        this.libraryName = source["libraryName"];
+	        this.reason = source["reason"];
+	        this.keyFrames = source["keyFrames"];
+	        this.relatedEntryIds = source["relatedEntryIds"];
+	        this.rawText = source["rawText"];
+	        this.suggestions = source["suggestions"];
+	    }
+	}
 	export class LogEntry {
 	    id: number;
 	    timestamp: string;

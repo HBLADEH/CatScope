@@ -3,6 +3,8 @@
 import {logcat} from '../models';
 import {adb} from '../models';
 
+export function AnalyzeLogs(arg1:Array<logcat.LogEntry>):Promise<Array<logcat.AnalysisResult>>;
+
 export function ClearLogs():Promise<void>;
 
 export function ExportLogs(arg1:Array<logcat.LogEntry>):Promise<string>;

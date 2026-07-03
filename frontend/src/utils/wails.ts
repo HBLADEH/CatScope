@@ -1,4 +1,12 @@
-import type { AndroidDevice, InstalledPackage, LogBatch, PackagePIDState, LogStatus } from '@/types/backend'
+import type {
+  AnalysisResult,
+  AndroidDevice,
+  InstalledPackage,
+  LogBatch,
+  LogEntry,
+  PackagePIDState,
+  LogStatus
+} from '@/types/backend'
 
 async function call<T>(method: string, ...args: unknown[]): Promise<T> {
   const app = window.go?.main?.App
@@ -16,6 +24,7 @@ export const backend = {
   listPackages: (serial: string, mode: string) => call<InstalledPackage[]>('ListPackages', serial, mode),
   setTrackedPackage: (serial: string, packageName: string) => call<void>('SetTrackedPackage', serial, packageName),
   getPackagePIDState: () => call<PackagePIDState>('GetPackagePIDState'),
+  analyzeLogs: (entries: LogEntry[]) => call<AnalysisResult[]>('AnalyzeLogs', entries),
   startLogcat: (serial: string) => call<void>('StartLogcat', serial),
   stopLogcat: () => call<void>('StopLogcat'),
   exportLogs: (entries: unknown[]) => call<string>('ExportLogs', entries),

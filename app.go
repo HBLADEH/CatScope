@@ -249,6 +249,10 @@ func (a *App) ExportLogs(entries []logcat.LogEntry) (string, error) {
 	return path, nil
 }
 
+func (a *App) AnalyzeLogs(entries []logcat.LogEntry) []logcat.AnalysisResult {
+	return logcat.AnalyzeEntries(entries)
+}
+
 func (a *App) ClearLogs() {
 	a.logStore.Clear()
 	a.parser.Reset()

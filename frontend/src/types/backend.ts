@@ -50,3 +50,36 @@ export interface PackagePIDState {
   knownPids?: number[]
   lastPid?: number
 }
+
+export type AnalysisType =
+  | 'java_crash'
+  | 'native_crash'
+  | 'anr'
+  | 'jni_error'
+  | 'install_error'
+  | 'unknown'
+
+export type AnalysisSeverity = 'info' | 'warning' | 'error' | 'fatal'
+
+export interface AnalysisResult {
+  id: string
+  type: AnalysisType
+  severity: AnalysisSeverity
+  title: string
+  summary: string
+  packageName?: string
+  pid?: number
+  tid?: number
+  timestamp?: string
+  primaryTag?: string
+  primaryMessage?: string
+  exceptionType?: string
+  threadName?: string
+  signal?: string
+  libraryName?: string
+  reason?: string
+  keyFrames?: string[]
+  relatedEntryIds?: number[]
+  rawText?: string
+  suggestions?: string[]
+}

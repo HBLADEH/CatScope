@@ -33,7 +33,7 @@ input {
 
 .toolbar {
   display: grid;
-  grid-template-columns: auto minmax(200px, 270px) 120px minmax(220px, 300px) auto auto auto auto auto auto minmax(160px, 1fr) minmax(150px, 200px);
+  grid-template-columns: auto minmax(200px, 270px) 120px minmax(220px, 300px) auto auto auto auto auto auto auto minmax(160px, 1fr) minmax(150px, 200px);
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -302,6 +302,66 @@ dd {
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.analysis-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #aeb7b0;
+  font-size: 12px;
+}
+
+.analysis-list {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-item {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #30362f;
+  border-radius: 6px;
+  background: #151815;
+  color: #e7e9e6;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analysis-item:hover,
+.analysis-item.selected {
+  border-color: #63764c;
+  background: #20251f;
+}
+
+.analysis-item strong {
+  font-size: 13px;
+}
+
+.analysis-item p {
+  margin: 0;
+  color: #b8c0b9;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.analysis-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.analysis-item ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #dce3dc;
+  font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .statusbar {

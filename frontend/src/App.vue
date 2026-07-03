@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { darkTheme, NIcon, type SelectOption } from 'naive-ui'
 import {
+  AnalyticsOutline,
   DownloadOutline,
   PauseOutline,
   PlayOutline,
@@ -151,6 +152,13 @@ onUnmounted(() => {
               Export
             </n-button>
 
+            <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
+              <template #icon>
+                <n-icon :component="AnalyticsOutline" />
+              </template>
+              Analyze
+            </n-button>
+
             <n-input v-model:value="store.search" clearable placeholder="Search log text" />
 
             <n-select
@@ -204,6 +212,7 @@ onUnmounted(() => {
             <span>Visible: {{ store.filteredLogs.length }}</span>
             <span>Package: {{ store.selectedPackage || 'all' }}</span>
             <span>PID: {{ store.currentPIDs.length ? store.currentPIDs.join(',') : 'none' }}</span>
+            <span>Issues: {{ store.analysisResults.length }}</span>
             <span>Buffered: {{ store.status.count }}</span>
             <span>Dropped: {{ store.status.discardedCount }}</span>
             <span>Status: {{ store.running ? (store.paused ? 'paused' : 'streaming') : 'stopped' }}</span>

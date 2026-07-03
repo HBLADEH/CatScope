@@ -1,7 +1,15 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import type { AndroidDevice, InstalledPackage, LogBatch, LogEntry, LogStatus, PackagePIDState } from '@/types/backend'
+import type {
+  AnalysisResult,
+  AndroidDevice,
+  InstalledPackage,
+  LogBatch,
+  LogEntry,
+  LogStatus,
+  PackagePIDState
+} from '@/types/backend'
 import { backend } from '@/utils/wails'
 
 const ALL_LEVELS = ['V', 'D', 'I', 'W', 'E', 'F']
@@ -12,6 +20,8 @@ export const useLogStore = defineStore('logs', () => {
   const selectedSerial = ref('')
   const logs = ref<LogEntry[]>([])
   const selectedLog = ref<LogEntry | null>(null)
+  const analysisResults = ref<AnalysisResult[]>([])
+  const selectedAnalysis = ref<AnalysisResult | null>(null)
   const packages = ref<InstalledPackage[]>([])
   const packageMode = ref<'thirdParty' | 'all'>('thirdParty')
   const selectedPackage = ref('')
@@ -110,6 +120,7 @@ export const useLogStore = defineStore('logs', () => {
   })
 
   let pollTimer: number | undefined
+  const analysisIDs = new Set<string>()
 
   async function refreshDevices() {
     loading.value = true
@@ -170,6 +181,9 @@ export const useLogStore = defineStore('logs', () => {
     try {
       logs.value = []
       selectedLog.value = null
+      analysisResults.value = []
+      selectedAnalysis.value = null
+      analysisIDs.clear()
       paused.value = false
       await backend.startLogcat(selectedSerial.value)
       if (selectedPackage.value) {
@@ -216,6 +230,7 @@ export const useLogStore = defineStore('logs', () => {
       await refreshPackages()
     }
     selectedLog.value = null
+    selectedAnalysis.value = null
     error.value = ''
   }
 
@@ -258,6 +273,9 @@ export const useLogStore = defineStore('logs', () => {
     await backend.clearLogs()
     logs.value = []
     selectedLog.value = null
+    analysisResults.value = []
+    selectedAnalysis.value = null
+    analysisIDs.clear()
     await fetchStatus()
   }
 
@@ -306,6 +324,7 @@ export const useLogStore = defineStore('logs', () => {
 
       if (batch.entries.length > 0) {
         logs.value.push(...batch.entries)
+        await analyzeIncremental(batch.entries)
         if (logs.value.length > UI_LOG_LIMIT) {
           logs.value.splice(0, logs.value.length - UI_LOG_LIMIT)
         }
@@ -359,6 +378,55 @@ export const useLogStore = defineStore('logs', () => {
     selectedLog.value = entry
   }
 
+  async function analyzeIncremental(entries: LogEntry[]) {
+    if (entries.length === 0) {
+      return
+    }
+    try {
+      const results = await backend.analyzeLogs(entries)
+      mergeAnalysisResults(results)
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function analyzeCurrentLogs() {
+    error.value = ''
+    notice.value = ''
+    try {
+      const results = await backend.analyzeLogs(filteredLogs.value)
+      analysisResults.value = []
+      selectedAnalysis.value = null
+      analysisIDs.clear()
+      mergeAnalysisResults(results)
+      notice.value = `Analyzed ${filteredLogs.value.length} logs, found ${results.length} issue(s).`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  function mergeAnalysisResults(results: AnalysisResult[]) {
+    for (const result of results) {
+      if (analysisIDs.has(result.id)) {
+        continue
+      }
+      analysisIDs.add(result.id)
+      analysisResults.value.unshift(result)
+    }
+  }
+
+  function selectAnalysis(result: AnalysisResult) {
+    selectedAnalysis.value = result
+    const firstID = result.relatedEntryIds?.[0]
+    if (!firstID) {
+      return
+    }
+    const related = logs.value.find((entry) => entry.id === firstID)
+    if (related) {
+      selectedLog.value = related
+    }
+  }
+
   function setError(err: unknown) {
     error.value = err instanceof Error ? err.message : String(err)
   }
@@ -370,6 +438,8 @@ export const useLogStore = defineStore('logs', () => {
     logs,
     filteredLogs,
     selectedLog,
+    analysisResults,
+    selectedAnalysis,
     packages,
     packageMode,
     selectedPackage,
@@ -401,10 +471,12 @@ export const useLogStore = defineStore('logs', () => {
     clear,
     clearSearch,
     exportFiltered,
+    analyzeCurrentLogs,
     togglePause,
     fetchStatus,
     startPolling,
     stopPolling,
-    selectLog
+    selectLog,
+    selectAnalysis
   }
 })
