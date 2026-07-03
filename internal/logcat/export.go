@@ -1,0 +1,39 @@
+package logcat
+
+import (
+	"fmt"
+	"strings"
+)
+
+func FormatEntriesText(entries []LogEntry) string {
+	var builder strings.Builder
+	for _, entry := range entries {
+		builder.WriteString(formatEntryLine(entry))
+		builder.WriteByte('\n')
+		for _, line := range entry.Multiline {
+			builder.WriteString(line)
+			builder.WriteByte('\n')
+		}
+	}
+	return builder.String()
+}
+
+func formatEntryLine(entry LogEntry) string {
+	return fmt.Sprintf(
+		"%s %5d %5d %s %-24s %s",
+		valueOrDash(entry.Timestamp),
+		entry.PID,
+		entry.TID,
+		valueOrDash(entry.Level),
+		valueOrDash(entry.Tag)+":",
+		entry.Message,
+	)
+}
+
+func valueOrDash(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "-"
+	}
+	return value
+}
