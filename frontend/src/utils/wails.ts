@@ -1,5 +1,6 @@
 import type {
   AnalysisResult,
+  AIContextOptions,
   AndroidDevice,
   InstalledPackage,
   LogBatch,
@@ -25,6 +26,9 @@ export const backend = {
   setTrackedPackage: (serial: string, packageName: string) => call<void>('SetTrackedPackage', serial, packageName),
   getPackagePIDState: () => call<PackagePIDState>('GetPackagePIDState'),
   analyzeLogs: (entries: LogEntry[]) => call<AnalysisResult[]>('AnalyzeLogs', entries),
+  generateAIContext: (resultID: string, options: AIContextOptions) => call<string>('GenerateAIContext', resultID, options),
+  copyAIContext: (resultID: string, options: AIContextOptions) => call<void>('CopyAIContext', resultID, options),
+  exportAIContext: (resultID: string, options: AIContextOptions) => call<string>('ExportAIContext', resultID, options),
   startLogcat: (serial: string) => call<void>('StartLogcat', serial),
   stopLogcat: () => call<void>('StopLogcat'),
   exportLogs: (entries: unknown[]) => call<string>('ExportLogs', entries),

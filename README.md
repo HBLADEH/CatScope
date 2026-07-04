@@ -45,7 +45,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer and rule-based Crash / ANR / Native / JNI Analyzer are available. Build / Install / Launch and AI Context Generator are planned or in progress.
+CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI Analyzer, and local AI Context Generator are available. Build / Install / Launch is planned or in progress.
 
 ## Features
 
@@ -72,12 +72,16 @@ CatScope is currently in the MVP stage. The core Logcat Viewer and rule-based Cr
 - Virtualized frontend log table.
 - Package / Level combined filtering and case-insensitive search.
 - Pause, clear, detail / analysis panel, and txt export.
+- Local AI Context Generator:
+  - Generates Markdown context for the selected analysis result.
+  - Includes device/package/PID metadata, analysis summary, related logs, context logs, key frames, and suggestions.
+  - Copies the Markdown to the clipboard or exports it as a `.md` file.
+  - Does not call OpenAI, Claude, Gemini, or any cloud model.
 
 ### Planned
 
 - Build / Install / Launch: build APKs, push them to devices, install, and launch target apps.
 - Install Error Analyzer: explain common install failures and suggest next steps.
-- AI Context Generator: produce Markdown context for AI-assisted debugging.
 - Offline historical log viewer.
 - More export formats: jsonl, csv, zip.
 - macOS and Linux support.
@@ -169,7 +173,7 @@ CatScope is not intended to provide:
 ## Roadmap
 
 1. Make the Logcat Viewer fast, filterable, searchable, and comfortable for long sessions.
-2. Keep improving the rule-based Analyzer and add AI context generation.
+2. Keep improving the rule-based Analyzer and AI context generation.
 3. Add Build / Install / Launch to complete the basic daily debugging loop.
 4. Improve cross-platform behavior and historical log analysis.
 
@@ -221,7 +225,7 @@ npm run build
 
 ## Privacy
 
-CatScope reads device information and Logcat through local adb. The project does not require uploading logs to a remote service. When exporting logs or using future AI context features, avoid sharing sensitive device information, user data, tokens, package names, or internal business logs.
+CatScope reads device information and Logcat through local adb. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
 
 ## License
 

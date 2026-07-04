@@ -314,6 +314,13 @@ dd {
   font-size: 12px;
 }
 
+.analysis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .analysis-list {
   display: grid;
   gap: 10px;

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"catscope/internal/adb"
+	"catscope/internal/ai"
 	"catscope/internal/logcat"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -30,6 +31,9 @@ type App struct {
 	logStore  *logcat.RingBuffer
 	pidMap    *logcat.PIDMapper
 	pidCancel context.CancelFunc
+
+	analysisMu sync.RWMutex
+	analysis   map[string]logcat.AnalysisResult
 }
 
 func NewApp() *App {
@@ -37,6 +41,7 @@ func NewApp() *App {
 		parser:   logcat.NewParser(),
 		logStore: logcat.NewRingBuffer(100000),
 		pidMap:   logcat.NewPIDMapper(),
+		analysis: map[string]logcat.AnalysisResult{},
 	}
 }
 
@@ -250,12 +255,81 @@ func (a *App) ExportLogs(entries []logcat.LogEntry) (string, error) {
 }
 
 func (a *App) AnalyzeLogs(entries []logcat.LogEntry) []logcat.AnalysisResult {
-	return logcat.AnalyzeEntries(entries)
+	results := logcat.AnalyzeEntries(entries)
+	a.storeAnalysisResults(results)
+	return results
+}
+
+func (a *App) GenerateAIContext(resultID string, options ai.AIContextOptions) (string, error) {
+	result, err := a.findAnalysisResult(resultID)
+	if err != nil {
+		return "", err
+	}
+
+	input := ai.ContextInput{
+		Device:         a.currentDeviceInfo(),
+		Analysis:       result,
+		Logs:           a.logStore.Snapshot(),
+		PIDState:       a.pidMap.State(),
+		CurrentPackage: a.pidMap.State().PackageName,
+		Options:        options,
+	}
+
+	return ai.GenerateMarkdown(input), nil
+}
+
+func (a *App) CopyAIContext(resultID string, options ai.AIContextOptions) error {
+	markdown, err := a.GenerateAIContext(resultID, options)
+	if err != nil {
+		return err
+	}
+	if err := wailsruntime.ClipboardSetText(a.context(), markdown); err != nil {
+		a.setLastError(err.Error())
+		return err
+	}
+	a.setLastError("")
+	return nil
+}
+
+func (a *App) ExportAIContext(resultID string, options ai.AIContextOptions) (string, error) {
+	markdown, err := a.GenerateAIContext(resultID, options)
+	if err != nil {
+		return "", err
+	}
+
+	path, err := wailsruntime.SaveFileDialog(a.context(), wailsruntime.SaveDialogOptions{
+		DefaultFilename: "catscope-ai-context.md",
+		Filters: []wailsruntime.FileFilter{
+			{
+				DisplayName: "Markdown (*.md)",
+				Pattern:     "*.md",
+			},
+		},
+	})
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	if strings.TrimSpace(path) == "" {
+		return "", errors.New("export canceled")
+	}
+	if filepath.Ext(path) == "" {
+		path += ".md"
+	}
+	if err := os.WriteFile(path, []byte(markdown), 0644); err != nil {
+		a.setLastError(err.Error())
+		return "", fmt.Errorf("export AI context failed: %w", err)
+	}
+	a.setLastError("")
+	return path, nil
 }
 
 func (a *App) ClearLogs() {
 	a.logStore.Clear()
 	a.parser.Reset()
+	a.analysisMu.Lock()
+	a.analysis = map[string]logcat.AnalysisResult{}
+	a.analysisMu.Unlock()
 }
 
 func (a *App) GetLogBatch(afterID int64, limit int) logcat.LogBatch {
@@ -368,6 +442,60 @@ func (a *App) stopPIDTracker() {
 	if cancel != nil {
 		cancel()
 	}
+}
+
+func (a *App) storeAnalysisResults(results []logcat.AnalysisResult) {
+	a.analysisMu.Lock()
+	defer a.analysisMu.Unlock()
+
+	if a.analysis == nil {
+		a.analysis = map[string]logcat.AnalysisResult{}
+	}
+	for _, result := range results {
+		if strings.TrimSpace(result.ID) == "" {
+			continue
+		}
+		a.analysis[result.ID] = result
+	}
+}
+
+func (a *App) findAnalysisResult(resultID string) (logcat.AnalysisResult, error) {
+	resultID = strings.TrimSpace(resultID)
+	if resultID == "" {
+		return logcat.AnalysisResult{}, errors.New("select an analysis result first")
+	}
+
+	a.analysisMu.RLock()
+	result, ok := a.analysis[resultID]
+	a.analysisMu.RUnlock()
+	if ok {
+		return result, nil
+	}
+
+	results := a.AnalyzeLogs(a.logStore.Snapshot())
+	for _, result := range results {
+		if result.ID == resultID {
+			return result, nil
+		}
+	}
+
+	return logcat.AnalysisResult{}, fmt.Errorf("analysis result not found: %s", resultID)
+}
+
+func (a *App) currentDeviceInfo() *adb.AndroidDevice {
+	a.mu.Lock()
+	serial := a.serial
+	adbPath := a.adbPath
+	a.mu.Unlock()
+
+	if strings.TrimSpace(serial) == "" || strings.TrimSpace(adbPath) == "" {
+		return nil
+	}
+	device, err := adb.GetDeviceInfo(a.context(), adbPath, serial)
+	if err != nil {
+		return &adb.AndroidDevice{Serial: serial}
+	}
+	return &device
 }
 
 func (a *App) setLastError(message string) {

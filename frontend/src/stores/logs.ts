@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 
 import type {
   AnalysisResult,
+  AIContextOptions,
   AndroidDevice,
   InstalledPackage,
   LogBatch,
@@ -295,6 +296,39 @@ export const useLogStore = defineStore('logs', () => {
     }
   }
 
+  function defaultAIContextOptions(): AIContextOptions {
+    return {
+      includeDeviceInfo: true,
+      includePackageInfo: true,
+      includeAnalysisSummary: true,
+      includeRelatedLogs: true,
+      includeBeforeContextLines: 50,
+      includeAfterContextLines: 50,
+      includeRawText: true,
+      includeSuggestions: true,
+      language: 'zh-CN',
+      packageFilter: selectedPackage.value,
+      levelFilter: [...levels.value],
+      searchKeyword: search.value
+    }
+  }
+
+  async function copyAIContext(resultID?: string) {
+    const targetID = resultID || selectedAnalysis.value?.id
+    if (!targetID) {
+      throw new Error('请先选择一个分析结果。')
+    }
+    await backend.copyAIContext(targetID, defaultAIContextOptions())
+  }
+
+  async function exportAIContext(resultID?: string) {
+    const targetID = resultID || selectedAnalysis.value?.id
+    if (!targetID) {
+      throw new Error('请先选择一个分析结果。')
+    }
+    return await backend.exportAIContext(targetID, defaultAIContextOptions())
+  }
+
   function togglePause() {
     paused.value = !paused.value
     if (paused.value) {
@@ -471,6 +505,8 @@ export const useLogStore = defineStore('logs', () => {
     clear,
     clearSearch,
     exportFiltered,
+    copyAIContext,
+    exportAIContext,
     analyzeCurrentLogs,
     togglePause,
     fetchStatus,

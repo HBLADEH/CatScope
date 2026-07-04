@@ -43,6 +43,45 @@ export namespace adb {
 
 }
 
+export namespace ai {
+
+	export class AIContextOptions {
+	    includeDeviceInfo: boolean;
+	    includePackageInfo: boolean;
+	    includeAnalysisSummary: boolean;
+	    includeRelatedLogs: boolean;
+	    includeBeforeContextLines: number;
+	    includeAfterContextLines: number;
+	    includeRawText: boolean;
+	    includeSuggestions: boolean;
+	    language: string;
+	    packageFilter?: string;
+	    levelFilter?: string[];
+	    searchKeyword?: string;
+
+	    static createFrom(source: any = {}) {
+	        return new AIContextOptions(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.includeDeviceInfo = source["includeDeviceInfo"];
+	        this.includePackageInfo = source["includePackageInfo"];
+	        this.includeAnalysisSummary = source["includeAnalysisSummary"];
+	        this.includeRelatedLogs = source["includeRelatedLogs"];
+	        this.includeBeforeContextLines = source["includeBeforeContextLines"];
+	        this.includeAfterContextLines = source["includeAfterContextLines"];
+	        this.includeRawText = source["includeRawText"];
+	        this.includeSuggestions = source["includeSuggestions"];
+	        this.language = source["language"];
+	        this.packageFilter = source["packageFilter"];
+	        this.levelFilter = source["levelFilter"];
+	        this.searchKeyword = source["searchKeyword"];
+	    }
+	}
+
+}
+
 export namespace logcat {
 	
 	export class AnalysisResult {
@@ -206,4 +245,3 @@ export namespace logcat {
 	}
 
 }
-

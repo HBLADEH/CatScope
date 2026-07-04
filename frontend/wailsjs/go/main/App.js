@@ -10,12 +10,24 @@ export function ClearLogs() {
   return window['go']['main']['App']['ClearLogs']();
 }
 
+export function CopyAIContext(arg1, arg2) {
+  return window['go']['main']['App']['CopyAIContext'](arg1, arg2);
+}
+
+export function ExportAIContext(arg1, arg2) {
+  return window['go']['main']['App']['ExportAIContext'](arg1, arg2);
+}
+
 export function ExportLogs(arg1) {
   return window['go']['main']['App']['ExportLogs'](arg1);
 }
 
 export function FindADB(arg1) {
   return window['go']['main']['App']['FindADB'](arg1);
+}
+
+export function GenerateAIContext(arg1, arg2) {
+  return window['go']['main']['App']['GenerateAIContext'](arg1, arg2);
 }
 
 export function GetDeviceInfo(arg1) {

@@ -93,6 +93,15 @@ func (b *RingBuffer) GetAfter(afterID int64, limit int) LogBatch {
 	}
 }
 
+func (b *RingBuffer) Snapshot() []LogEntry {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	entries := make([]LogEntry, len(b.entries))
+	copy(entries, b.entries)
+	return entries
+}
+
 func (b *RingBuffer) Clear() {
 	b.mu.Lock()
 	defer b.mu.Unlock()

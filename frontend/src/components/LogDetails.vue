@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { NButton, NTag } from 'naive-ui'
+import { NButton, NTag, useMessage } from 'naive-ui'
 
 import { useLogStore } from '@/stores/logs'
 
 const store = useLogStore()
+const message = useMessage()
 
 const fullText = computed(() => {
   const entry = store.selectedLog
@@ -13,6 +14,24 @@ const fullText = computed(() => {
   }
   return [entry.raw, ...(entry.multiline ?? [])].filter(Boolean).join('\n')
 })
+
+async function copyAIContext(resultID?: string) {
+  try {
+    await store.copyAIContext(resultID)
+    message.success('AI Context copied to clipboard.')
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : String(err))
+  }
+}
+
+async function exportAIContext(resultID?: string) {
+  try {
+    const path = await store.exportAIContext(resultID)
+    message.success(`AI Context exported to ${path}`)
+  } catch (err) {
+    message.error(err instanceof Error ? err.message : String(err))
+  }
+}
 </script>
 
 <template>
@@ -53,9 +72,14 @@ const fullText = computed(() => {
       <n-tab-pane name="analysis" tab="Analysis">
         <div class="analysis-toolbar">
           <span>{{ store.analysisResults.length }} issue(s)</span>
-          <n-button size="small" tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
-            Analyze Current Logs
-          </n-button>
+          <div class="analysis-actions">
+            <n-button size="small" tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
+              Analyze Current Logs
+            </n-button>
+            <n-button size="small" tertiary :disabled="!store.selectedAnalysis" @click="copyAIContext()">
+              Generate AI Context for Selected
+            </n-button>
+          </div>
         </div>
 
         <div v-if="store.analysisResults.length === 0" class="empty-copy">
@@ -63,13 +87,15 @@ const fullText = computed(() => {
         </div>
 
         <div v-else class="analysis-list">
-          <button
+          <div
             v-for="result in store.analysisResults"
             :key="result.id"
             class="analysis-item"
             :class="{ selected: store.selectedAnalysis?.id === result.id }"
-            type="button"
+            role="button"
+            tabindex="0"
             @click="store.selectAnalysis(result)"
+            @keydown.enter="store.selectAnalysis(result)"
           >
             <div class="analysis-head">
               <n-tag size="small" :type="result.severity === 'fatal' ? 'error' : 'warning'">
@@ -81,6 +107,14 @@ const fullText = computed(() => {
             </div>
             <strong>{{ result.title }}</strong>
             <p>{{ result.summary }}</p>
+            <div class="analysis-actions">
+              <n-button size="small" type="primary" tertiary @click.stop="copyAIContext(result.id)">
+                Copy AI Context
+              </n-button>
+              <n-button size="small" tertiary @click.stop="exportAIContext(result.id)">
+                Export AI Context
+              </n-button>
+            </div>
             <dl>
               <dt>Package</dt>
               <dd>{{ result.packageName || '-' }}</dd>
@@ -104,7 +138,7 @@ const fullText = computed(() => {
             </ul>
             <h3>Raw</h3>
             <pre>{{ result.rawText || '-' }}</pre>
-          </button>
+          </div>
         </div>
       </n-tab-pane>
     </n-tabs>

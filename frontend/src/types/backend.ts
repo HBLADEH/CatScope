@@ -83,3 +83,18 @@ export interface AnalysisResult {
   rawText?: string
   suggestions?: string[]
 }
+
+export interface AIContextOptions {
+  includeDeviceInfo: boolean
+  includePackageInfo: boolean
+  includeAnalysisSummary: boolean
+  includeRelatedLogs: boolean
+  includeBeforeContextLines: number
+  includeAfterContextLines: number
+  includeRawText: boolean
+  includeSuggestions: boolean
+  language: 'zh-CN' | 'en-US'
+  packageFilter?: string
+  levelFilter?: string[]
+  searchKeyword?: string
+}
