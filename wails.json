@@ -7,7 +7,14 @@
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "http://localhost:5173",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "HBLADEH",
+    "email": "1012582116@qq.com"
+  },
+  "Info": {
+    "companyName": "HBLADEH",
+    "productName": "CatScope",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright (c) 2026 HBLADEH",
+    "comments": "CatScope v0.1.0-alpha"
   }
 }
