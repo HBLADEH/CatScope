@@ -49,43 +49,53 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
 
 ## Features
 
-### Available Now
+### Feature Checklist
 
-- Wails v2 desktop app with a Go backend and a Vue 3 + TypeScript frontend.
-- ADB discovery from user configuration, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `PATH`.
-- Device list parsing with clear `device`, `offline`, `unauthorized`, and `unknown` states.
-- Device information display: model, brand, Android version, SDK, and ABI.
-- Live `adb logcat -v threadtime -b main,system,crash` streaming.
-- Start, stop, restart, and device switching for Logcat streams.
-- Continuous stdout / stderr reading with clear error reporting.
-- Installed package listing for all packages and third-party packages.
-- Package search, selection, clearing, and all-log mode.
-- PID tracking for the selected package, including app restarts.
-- threadtime parsing, raw line preservation, and multiline log merging.
-- Java stacktrace and AndroidRuntime `FATAL EXCEPTION` grouping.
-- Rule-based analyzer without external AI API calls:
-  - Java Crash: `AndroidRuntime`, `FATAL EXCEPTION`, `Process:`, `Caused by:`, and common exception types.
-  - Native Crash: `SIGSEGV`, `SIGABRT`, `backtrace:`, `tombstone`, `Abort message`, `fault addr`, and `libxxx.so`.
-  - ANR: `ANR in`, `Application Not Responding`, `Input dispatching timed out`, and service / broadcast timeouts.
-  - JNI Error: `JNI DETECTED ERROR IN APPLICATION`, `CheckJNI`, stale / deleted references, and pending exceptions.
-  - Install Error: `INSTALL_FAILED_*`, `INSTALL_PARSE_FAILED_*`, `DELETE_FAILED_*`, `Failure [INSTALL_FAILED...]`, and `adb: failed to install`.
-- Install Error Analyzer for install failure text or log output, with bilingual reason and next-step suggestions. Future Build / Install / Launch workflows will reuse this analyzer.
-- 100000-line ring buffer with batch reads and dropped-line counts.
-- Virtualized frontend log table.
-- Package / Level combined filtering and case-insensitive search.
-- Pause, clear, detail / analysis panel, and txt export.
-- Local AI Context Generator:
-  - Generates Markdown context for the selected analysis result.
-  - Includes device/package/PID metadata, analysis summary, related logs, context logs, key frames, and suggestions.
-  - Copies the Markdown to the clipboard or exports it as a `.md` file.
-  - Does not call OpenAI, Claude, Gemini, or any cloud model.
-
-### Planned
-
-- Build / Install / Launch: build APKs, push them to devices, install, and launch target apps.
-- Offline historical log viewer.
-- More export formats: jsonl, csv, zip.
-- macOS and Linux support.
+- [x] Desktop app foundation
+  - [x] Wails v2 desktop app with a Go backend.
+  - [x] Vue 3 + TypeScript frontend.
+- [x] ADB and device management
+  - [x] ADB discovery from user configuration, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `PATH`.
+  - [x] Device list parsing with clear `device`, `offline`, `unauthorized`, and `unknown` states.
+  - [x] Device information display: model, brand, Android version, SDK, and ABI.
+- [x] Live Logcat Viewer
+  - [x] Live `adb logcat -v threadtime -b main,system,crash` streaming.
+  - [x] Start, stop, restart, and device switching for Logcat streams.
+  - [x] Continuous stdout / stderr reading with clear error reporting.
+  - [x] 100000-line ring buffer with batch reads and dropped-line counts.
+  - [x] Virtualized frontend log table.
+- [x] Package and PID filtering
+  - [x] Installed package listing for all packages and third-party packages.
+  - [x] Package search, selection, clearing, and all-log mode.
+  - [x] PID tracking for the selected package, including app restarts.
+  - [x] Package / Level combined filtering and case-insensitive search.
+- [x] Log parsing and interaction
+  - [x] threadtime parsing, raw line preservation, and multiline log merging.
+  - [x] Java stacktrace and AndroidRuntime `FATAL EXCEPTION` grouping.
+  - [x] Pause, clear, detail / analysis panel, and txt export.
+- [x] Rule-based Analyzer without external AI API calls
+  - [x] Java Crash: `AndroidRuntime`, `FATAL EXCEPTION`, `Process:`, `Caused by:`, and common exception types.
+  - [x] Native Crash: `SIGSEGV`, `SIGABRT`, `backtrace:`, `tombstone`, `Abort message`, `fault addr`, and `libxxx.so`.
+  - [x] ANR: `ANR in`, `Application Not Responding`, `Input dispatching timed out`, and service / broadcast timeouts.
+  - [x] JNI Error: `JNI DETECTED ERROR IN APPLICATION`, `CheckJNI`, stale / deleted references, and pending exceptions.
+  - [x] Install Error: `INSTALL_FAILED_*`, `INSTALL_PARSE_FAILED_*`, `DELETE_FAILED_*`, `Failure [INSTALL_FAILED...]`, and `adb: failed to install`.
+- [x] Install Error Analyzer
+  - [x] Analyze install failure text or log output.
+  - [x] Provide bilingual reasons and next-step suggestions.
+  - [x] Prepare analyzer output for future Build / Install / Launch workflows.
+- [x] Local AI Context Generator
+  - [x] Generate Markdown context for the selected analysis result.
+  - [x] Include device/package/PID metadata, analysis summary, related logs, context logs, key frames, and suggestions.
+  - [x] Copy the Markdown to the clipboard or export it as a `.md` file.
+  - [x] Avoid OpenAI, Claude, Gemini, or any cloud model calls.
+- [ ] Build / Install / Launch
+  - [ ] Build APKs.
+  - [ ] Push APKs to devices.
+  - [ ] Install target apps.
+  - [ ] Launch target apps.
+- [ ] Offline historical log viewer.
+- [ ] More export formats: jsonl, csv, zip.
+- [ ] macOS and Linux support.
 
 ## Quick Start
 

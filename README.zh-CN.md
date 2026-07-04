@@ -49,43 +49,53 @@ CatScope 当前处于 MVP 阶段。核心 Logcat Viewer、规则化 Crash / ANR 
 
 ## 功能
 
-### 当前已实现
+### 功能清单
 
-- Wails v2 桌面应用，Go 后端，Vue 3 + TypeScript 前端。
-- ADB 自动查找，支持用户配置、`ANDROID_HOME`、`ANDROID_SDK_ROOT` 和 `PATH`。
-- 设备列表解析，区分 `device`、`offline`、`unauthorized` 和 `unknown`。
-- 设备信息读取，包括 model、brand、Android version、SDK 和 ABI。
-- 实时读取 `adb logcat -v threadtime -b main,system,crash`。
-- Logcat 启动、停止、重启和设备切换。
-- stdout / stderr 持续读取，异常退出时显示明确错误。
-- 已安装包列表读取，支持全部包和第三方包。
-- Package 搜索、选择、清空，以及全部日志模式。
-- PID 自动追踪，应用重启后自动更新当前 PID。
-- threadtime 解析、raw 保留、多行日志归并。
-- Java stacktrace 和 AndroidRuntime `FATAL EXCEPTION` 基础归并。
-- 规则化 Analyzer，不调用外部 AI API：
-  - Java Crash: `AndroidRuntime`、`FATAL EXCEPTION`、`Process:`、`Caused by:` 和常见异常类型。
-  - Native Crash: `SIGSEGV`、`SIGABRT`、`backtrace:`、`tombstone`、`Abort message`、`fault addr` 和 `libxxx.so`。
-  - ANR: `ANR in`、`Application Not Responding`、`Input dispatching timed out` 和 service / broadcast timeout。
-  - JNI Error: `JNI DETECTED ERROR IN APPLICATION`、`CheckJNI`、stale / deleted reference 和 pending exception。
-  - Install Error: `INSTALL_FAILED_*`、`INSTALL_PARSE_FAILED_*`、`DELETE_FAILED_*`、`Failure [INSTALL_FAILED...]` 和 `adb: failed to install`。
-- Install Error Analyzer 可分析安装失败文本或日志输出，给出中英文原因和下一步建议；后续 Build / Install / Launch 会复用这套能力。
-- 100000 行 ring buffer，支持批量拉取和丢弃计数。
-- 前端虚拟滚动日志表。
-- Package / Level 组合过滤，大小写不敏感搜索。
-- 暂停、清屏、日志详情 / Analysis 面板和 txt 导出。
-- 本地 AI Context Generator：
-  - 为选中的分析结果生成 Markdown 上下文。
-  - 包含设备、package、PID、分析摘要、关联日志、上下文日志、关键帧和建议。
-  - 支持复制到剪贴板或导出为 `.md` 文件。
-  - 不调用 OpenAI、Claude、Gemini 或任何云端模型。
-
-### 计划中
-
-- Build / Install / Launch: APK 构建、推送、安装和启动目标应用。
-- 离线打开历史日志。
-- 更多导出格式: jsonl、csv、zip。
-- macOS 和 Linux 适配。
+- [x] 桌面应用基础
+  - [x] Wails v2 桌面应用，Go 后端。
+  - [x] Vue 3 + TypeScript 前端。
+- [x] ADB 与设备管理
+  - [x] ADB 自动查找，支持用户配置、`ANDROID_HOME`、`ANDROID_SDK_ROOT` 和 `PATH`。
+  - [x] 设备列表解析，区分 `device`、`offline`、`unauthorized` 和 `unknown`。
+  - [x] 设备信息读取，包括 model、brand、Android version、SDK 和 ABI。
+- [x] 实时 Logcat Viewer
+  - [x] 实时读取 `adb logcat -v threadtime -b main,system,crash`。
+  - [x] Logcat 启动、停止、重启和设备切换。
+  - [x] stdout / stderr 持续读取，异常退出时显示明确错误。
+  - [x] 100000 行 ring buffer，支持批量拉取和丢弃计数。
+  - [x] 前端虚拟滚动日志表。
+- [x] Package 与 PID 过滤
+  - [x] 已安装包列表读取，支持全部包和第三方包。
+  - [x] Package 搜索、选择、清空，以及全部日志模式。
+  - [x] PID 自动追踪，应用重启后自动更新当前 PID。
+  - [x] Package / Level 组合过滤，大小写不敏感搜索。
+- [x] 日志解析与交互
+  - [x] threadtime 解析、raw 保留、多行日志归并。
+  - [x] Java stacktrace 和 AndroidRuntime `FATAL EXCEPTION` 基础归并。
+  - [x] 暂停、清屏、日志详情 / Analysis 面板和 txt 导出。
+- [x] 规则化 Analyzer，不调用外部 AI API
+  - [x] Java Crash: `AndroidRuntime`、`FATAL EXCEPTION`、`Process:`、`Caused by:` 和常见异常类型。
+  - [x] Native Crash: `SIGSEGV`、`SIGABRT`、`backtrace:`、`tombstone`、`Abort message`、`fault addr` 和 `libxxx.so`。
+  - [x] ANR: `ANR in`、`Application Not Responding`、`Input dispatching timed out` 和 service / broadcast timeout。
+  - [x] JNI Error: `JNI DETECTED ERROR IN APPLICATION`、`CheckJNI`、stale / deleted reference 和 pending exception。
+  - [x] Install Error: `INSTALL_FAILED_*`、`INSTALL_PARSE_FAILED_*`、`DELETE_FAILED_*`、`Failure [INSTALL_FAILED...]` 和 `adb: failed to install`。
+- [x] Install Error Analyzer
+  - [x] 分析安装失败文本或日志输出。
+  - [x] 给出中英文原因和下一步建议。
+  - [x] 为后续 Build / Install / Launch 工作流复用分析能力。
+- [x] 本地 AI Context Generator
+  - [x] 为选中的分析结果生成 Markdown 上下文。
+  - [x] 包含设备、package、PID、分析摘要、关联日志、上下文日志、关键帧和建议。
+  - [x] 支持复制到剪贴板或导出为 `.md` 文件。
+  - [x] 不调用 OpenAI、Claude、Gemini 或任何云端模型。
+- [ ] Build / Install / Launch
+  - [ ] APK 构建。
+  - [ ] 推送 APK 到设备。
+  - [ ] 安装目标应用。
+  - [ ] 启动目标应用。
+- [ ] 离线打开历史日志。
+- [ ] 更多导出格式: jsonl、csv、zip。
+- [ ] macOS 和 Linux 适配。
 
 ## 快速开始
 
