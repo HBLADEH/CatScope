@@ -1,6 +1,9 @@
 package logcat
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAnalyzeJavaCrash(t *testing.T) {
 	entries := []LogEntry{
@@ -165,4 +168,116 @@ func TestAnalyzeEntriesDeduplicatesRepeatedCrash(t *testing.T) {
 	if len(results) != 1 {
 		t.Fatalf("expected deduped result, got %+v", results)
 	}
+}
+
+func TestAnalyzeInstallOutputKnownCodes(t *testing.T) {
+	tests := []struct {
+		code     string
+		severity AnalysisSeverity
+		title    string
+	}{
+		{"INSTALL_FAILED_VERSION_DOWNGRADE", SeverityError, "version downgrade"},
+		{"INSTALL_FAILED_UPDATE_INCOMPATIBLE", SeverityError, "update incompatible"},
+		{"INSTALL_FAILED_NO_MATCHING_ABIS", SeverityFatal, "no matching ABIs"},
+		{"INSTALL_FAILED_INVALID_APK", SeverityError, "invalid APK"},
+		{"INSTALL_PARSE_FAILED_NO_CERTIFICATES", SeverityFatal, "no certificates"},
+		{"INSTALL_PARSE_FAILED_MANIFEST_MALFORMED", SeverityError, "malformed manifest"},
+		{"INSTALL_FAILED_INSUFFICIENT_STORAGE", SeverityWarning, "insufficient storage"},
+		{"INSTALL_FAILED_ALREADY_EXISTS", SeverityWarning, "already exists"},
+		{"INSTALL_FAILED_MISSING_SHARED_LIBRARY", SeverityFatal, "missing shared library"},
+		{"INSTALL_FAILED_CPU_ABI_INCOMPATIBLE", SeverityFatal, "CPU ABI incompatible"},
+		{"INSTALL_FAILED_TEST_ONLY", SeverityWarning, "test only"},
+		{"DELETE_FAILED_INTERNAL_ERROR", SeverityError, "internal error"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.code, func(t *testing.T) {
+			output := "Performing Streamed Install\nFailure [" + tt.code + ": package install failed]"
+			results := AnalyzeInstallOutput(output)
+			if len(results) != 1 {
+				t.Fatalf("expected one install result, got %+v", results)
+			}
+			result := results[0]
+			if result.Type != AnalysisTypeInstallError {
+				t.Fatalf("unexpected type: %+v", result)
+			}
+			if result.Severity != tt.severity {
+				t.Fatalf("unexpected severity for %s: %+v", tt.code, result.Severity)
+			}
+			if !strings.Contains(result.Title, tt.title) {
+				t.Fatalf("expected title to contain %q, got %q", tt.title, result.Title)
+			}
+			if !strings.Contains(result.RawText, tt.code) || !strings.Contains(result.PrimaryMessage, tt.code) {
+				t.Fatalf("expected raw and primary message to preserve code: %+v", result)
+			}
+			if !containsPrefix(result.Suggestions, "中文:") || !containsPrefix(result.Suggestions, "English:") {
+				t.Fatalf("expected bilingual suggestions: %+v", result.Suggestions)
+			}
+			if result.Reason == "" {
+				t.Fatalf("expected reason: %+v", result)
+			}
+		})
+	}
+}
+
+func TestAnalyzeTextInstallOutputAlias(t *testing.T) {
+	results := AnalyzeText("adb: failed to install app.apk: Failure [INSTALL_FAILED_TEST_ONLY]")
+	if len(results) != 1 {
+		t.Fatalf("expected one result from AnalyzeText, got %+v", results)
+	}
+	if results[0].Type != AnalysisTypeInstallError || results[0].Severity != SeverityWarning {
+		t.Fatalf("unexpected install result: %+v", results[0])
+	}
+	if !strings.Contains(strings.Join(results[0].Suggestions, "\n"), "adb install -t") {
+		t.Fatalf("expected testOnly suggestion: %+v", results[0].Suggestions)
+	}
+}
+
+func TestAnalyzeInstallOutputGenericADBFailure(t *testing.T) {
+	results := AnalyzeInstallOutput("adb: failed to install C:\\tmp\\app.apk: device offline")
+	if len(results) != 1 {
+		t.Fatalf("expected generic adb install failure, got %+v", results)
+	}
+	result := results[0]
+	if result.Type != AnalysisTypeInstallError {
+		t.Fatalf("unexpected type: %+v", result)
+	}
+	if result.Title != "Install failed" {
+		t.Fatalf("unexpected title: %+v", result.Title)
+	}
+	if !strings.Contains(result.Reason, "没有明确") {
+		t.Fatalf("expected bilingual generic reason: %+v", result.Reason)
+	}
+}
+
+func TestAnalyzeEntriesDetectsInstallError(t *testing.T) {
+	entries := []LogEntry{
+		{
+			ID:      60,
+			Level:   "E",
+			Tag:     "PackageInstaller",
+			Message: "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package has different signature]",
+			Raw:     "07-05 09:00:00.000  1000  1000 E PackageInstaller: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package has different signature]",
+		},
+	}
+
+	results := AnalyzeEntries(entries)
+	if len(results) != 1 {
+		t.Fatalf("expected install analyzer result, got %+v", results)
+	}
+	if results[0].Type != AnalysisTypeInstallError {
+		t.Fatalf("unexpected result type: %+v", results[0])
+	}
+	if len(results[0].RelatedEntryIDs) != 1 || results[0].RelatedEntryIDs[0] != 60 {
+		t.Fatalf("expected related log id: %+v", results[0].RelatedEntryIDs)
+	}
+}
+
+func containsPrefix(values []string, prefix string) bool {
+	for _, value := range values {
+		if strings.HasPrefix(value, prefix) {
+			return true
+		}
+	}
+	return false
 }

@@ -45,7 +45,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI Analyzer, and local AI Context Generator are available. Build / Install / Launch is planned or in progress.
+CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, and local AI Context Generator are available. Build / Install / Launch is planned or in progress.
 
 ## Features
 
@@ -68,6 +68,8 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
   - Native Crash: `SIGSEGV`, `SIGABRT`, `backtrace:`, `tombstone`, `Abort message`, `fault addr`, and `libxxx.so`.
   - ANR: `ANR in`, `Application Not Responding`, `Input dispatching timed out`, and service / broadcast timeouts.
   - JNI Error: `JNI DETECTED ERROR IN APPLICATION`, `CheckJNI`, stale / deleted references, and pending exceptions.
+  - Install Error: `INSTALL_FAILED_*`, `INSTALL_PARSE_FAILED_*`, `DELETE_FAILED_*`, `Failure [INSTALL_FAILED...]`, and `adb: failed to install`.
+- Install Error Analyzer for install failure text or log output, with bilingual reason and next-step suggestions. Future Build / Install / Launch workflows will reuse this analyzer.
 - 100000-line ring buffer with batch reads and dropped-line counts.
 - Virtualized frontend log table.
 - Package / Level combined filtering and case-insensitive search.
@@ -81,7 +83,6 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
 ### Planned
 
 - Build / Install / Launch: build APKs, push them to devices, install, and launch target apps.
-- Install Error Analyzer: explain common install failures and suggest next steps.
 - Offline historical log viewer.
 - More export formats: jsonl, csv, zip.
 - macOS and Linux support.

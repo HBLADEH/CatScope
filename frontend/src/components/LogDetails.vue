@@ -32,6 +32,16 @@ async function exportAIContext(resultID?: string) {
     message.error(err instanceof Error ? err.message : String(err))
   }
 }
+
+function severityTagType(severity: string) {
+  if (severity === 'fatal' || severity === 'error') {
+    return 'error'
+  }
+  if (severity === 'warning') {
+    return 'warning'
+  }
+  return 'info'
+}
 </script>
 
 <template>
@@ -83,7 +93,7 @@ async function exportAIContext(resultID?: string) {
         </div>
 
         <div v-if="store.analysisResults.length === 0" class="empty-copy">
-          No crash, ANR, native crash, or JNI issue detected yet.
+          No crash, ANR, native crash, JNI, or install issue detected yet.
         </div>
 
         <div v-else class="analysis-list">
@@ -98,7 +108,7 @@ async function exportAIContext(resultID?: string) {
             @keydown.enter="store.selectAnalysis(result)"
           >
             <div class="analysis-head">
-              <n-tag size="small" :type="result.severity === 'fatal' ? 'error' : 'warning'">
+              <n-tag size="small" :type="severityTagType(result.severity)">
                 {{ result.type }}
               </n-tag>
               <n-tag size="small" :bordered="false">
