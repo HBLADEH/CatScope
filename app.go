@@ -12,7 +12,9 @@ import (
 
 	"catscope/internal/adb"
 	"catscope/internal/ai"
+	"catscope/internal/build"
 	"catscope/internal/logcat"
+	"catscope/internal/workspace"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -34,6 +36,15 @@ type App struct {
 
 	analysisMu sync.RWMutex
 	analysis   map[string]logcat.AnalysisResult
+}
+
+type BuildInstallLaunchResult struct {
+	Build           build.BuildResult       `json:"build"`
+	Install         adb.InstallResult       `json:"install"`
+	Launch          adb.LaunchResult        `json:"launch"`
+	PackageName     string                  `json:"packageName"`
+	APK             *build.APKInfo          `json:"apk,omitempty"`
+	AnalysisResults []logcat.AnalysisResult `json:"analysisResults,omitempty"`
 }
 
 func NewApp() *App {
@@ -96,6 +107,12 @@ func (a *App) GetDeviceInfo(serial string) (adb.AndroidDevice, error) {
 	}
 	a.setLastError("")
 	return device, nil
+}
+
+func (a *App) SetActiveDevice(serial string) {
+	a.mu.Lock()
+	a.serial = strings.TrimSpace(serial)
+	a.mu.Unlock()
 }
 
 func (a *App) ListPackages(serial string, mode string) ([]adb.InstalledPackage, error) {
@@ -254,6 +271,178 @@ func (a *App) ExportLogs(entries []logcat.LogEntry) (string, error) {
 	return path, nil
 }
 
+func (a *App) SelectProjectDirectory() (string, error) {
+	path, err := wailsruntime.OpenDirectoryDialog(a.context(), wailsruntime.OpenDialogOptions{
+		Title: "Select Android Project",
+	})
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	return strings.TrimSpace(path), nil
+}
+
+func (a *App) GetProjectConfig() (workspace.ProjectConfig, error) {
+	config, err := workspace.LoadProjectConfig(workspace.DefaultProjectConfigPath())
+	if err != nil {
+		a.setLastError(err.Error())
+		return workspace.ProjectConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) SaveProjectConfig(config workspace.ProjectConfig) error {
+	if err := workspace.SaveProjectConfig(workspace.DefaultProjectConfigPath(), config); err != nil {
+		a.setLastError(err.Error())
+		return err
+	}
+	a.setLastError("")
+	return nil
+}
+
+func (a *App) BuildDebug(projectPath string) (build.BuildResult, error) {
+	result, err := build.RunDebugBuild(a.context(), projectPath)
+	if err != nil {
+		a.setLastError(err.Error())
+		return build.BuildResult{}, err
+	}
+	a.updateProjectConfig(func(config workspace.ProjectConfig) workspace.ProjectConfig {
+		config.ProjectPath = result.ProjectPath
+		config.DefaultBuildTask = result.Task
+		if result.APK != nil {
+			config.LastAPKPath = result.APK.APKPath
+		}
+		return config
+	})
+	if result.Error != "" {
+		a.setLastError(result.Error)
+	} else {
+		a.setLastError("")
+	}
+	return result, nil
+}
+
+func (a *App) FindLatestAPK(projectPath string) (build.APKInfo, error) {
+	apk, err := build.FindLatestAPK(projectPath)
+	if err != nil {
+		a.setLastError(err.Error())
+		return build.APKInfo{}, err
+	}
+	a.updateProjectConfig(func(config workspace.ProjectConfig) workspace.ProjectConfig {
+		config.ProjectPath = strings.TrimSpace(projectPath)
+		config.LastAPKPath = apk.APKPath
+		return config
+	})
+	a.setLastError("")
+	return apk, nil
+}
+
+func (a *App) InstallAPK(apkPath string, options adb.InstallOptions) (adb.InstallResult, error) {
+	adbPath, serial, err := a.adbAndSerial()
+	if err != nil {
+		return adb.InstallResult{}, err
+	}
+	result, err := adb.InstallAPK(a.context(), adbPath, serial, apkPath, options)
+	if err != nil {
+		a.setLastError(err.Error())
+		return adb.InstallResult{}, err
+	}
+	if len(result.AnalysisResults) > 0 {
+		a.storeAnalysisResults(result.AnalysisResults)
+	}
+	a.updateProjectConfig(func(config workspace.ProjectConfig) workspace.ProjectConfig {
+		config.LastAPKPath = result.APKPath
+		config.InstallOptions = options
+		return config
+	})
+	if result.Error != "" {
+		a.setLastError(result.Error)
+	} else {
+		a.setLastError("")
+	}
+	return result, nil
+}
+
+func (a *App) LaunchApp(packageName string) (adb.LaunchResult, error) {
+	packageName = strings.TrimSpace(packageName)
+	if packageName == "" {
+		packageName = a.pidMap.State().PackageName
+	}
+	adbPath, serial, err := a.adbAndSerial()
+	if err != nil {
+		return adb.LaunchResult{}, err
+	}
+	result, err := adb.LaunchApp(a.context(), adbPath, serial, packageName)
+	if err != nil {
+		a.setLastError(err.Error())
+		return adb.LaunchResult{}, err
+	}
+	if result.Success {
+		_ = a.SetTrackedPackage(serial, packageName)
+		a.updateProjectConfig(func(config workspace.ProjectConfig) workspace.ProjectConfig {
+			config.PackageName = packageName
+			return config
+		})
+	}
+	if result.Error != "" {
+		a.setLastError(result.Error)
+	} else {
+		a.setLastError("")
+	}
+	return result, nil
+}
+
+func (a *App) BuildInstallLaunch(config workspace.ProjectConfig) (BuildInstallLaunchResult, error) {
+	config = workspace.NormalizeProjectConfig(config)
+	if config.PackageName == "" {
+		config.PackageName = a.pidMap.State().PackageName
+	}
+	buildResult, err := build.Run(a.context(), build.BuildRequest{
+		ProjectPath: config.ProjectPath,
+		Task:        config.DefaultBuildTask,
+	})
+	if err != nil {
+		a.setLastError(err.Error())
+		return BuildInstallLaunchResult{}, err
+	}
+	result := BuildInstallLaunchResult{
+		Build:       buildResult,
+		PackageName: config.PackageName,
+		APK:         buildResult.APK,
+	}
+	if !buildResult.Success || buildResult.APK == nil {
+		if buildResult.Error != "" {
+			a.setLastError(buildResult.Error)
+		}
+		return result, nil
+	}
+
+	installResult, err := a.InstallAPK(buildResult.APK.APKPath, config.InstallOptions)
+	if err != nil {
+		return result, err
+	}
+	result.Install = installResult
+	result.AnalysisResults = installResult.AnalysisResults
+	if !installResult.Success {
+		return result, nil
+	}
+
+	if strings.TrimSpace(config.PackageName) == "" {
+		result.Install.Error = "package name is required to launch after install"
+		a.setLastError(result.Install.Error)
+		return result, nil
+	}
+	launchResult, err := a.LaunchApp(config.PackageName)
+	if err != nil {
+		return result, err
+	}
+	result.Launch = launchResult
+
+	config.LastAPKPath = buildResult.APK.APKPath
+	_ = a.SaveProjectConfig(config)
+	return result, nil
+}
+
 func (a *App) AnalyzeLogs(entries []logcat.LogEntry) []logcat.AnalysisResult {
 	results := logcat.AnalyzeEntries(entries)
 	a.storeAnalysisResults(results)
@@ -364,6 +553,20 @@ func (a *App) ensureADB(configuredPath string) (string, error) {
 	return a.FindADB(configuredPath)
 }
 
+func (a *App) adbAndSerial() (string, string, error) {
+	adbPath, err := a.ensureADB("")
+	if err != nil {
+		return "", "", err
+	}
+	a.mu.Lock()
+	serial := strings.TrimSpace(a.serial)
+	a.mu.Unlock()
+	if serial == "" {
+		return "", "", errors.New("select a connected Android device first")
+	}
+	return adbPath, serial, nil
+}
+
 func (a *App) context() context.Context {
 	if a.ctx != nil {
 		return a.ctx
@@ -457,6 +660,18 @@ func (a *App) storeAnalysisResults(results []logcat.AnalysisResult) {
 		}
 		a.analysis[result.ID] = result
 	}
+}
+
+func (a *App) updateProjectConfig(update func(workspace.ProjectConfig) workspace.ProjectConfig) {
+	path := workspace.DefaultProjectConfigPath()
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	config, err := workspace.LoadProjectConfig(path)
+	if err != nil {
+		return
+	}
+	_ = workspace.SaveProjectConfig(path, update(config))
 }
 
 func (a *App) findAnalysisResult(resultID string) (logcat.AnalysisResult, error) {

@@ -6,6 +6,14 @@ export function AnalyzeLogs(arg1) {
   return window['go']['main']['App']['AnalyzeLogs'](arg1);
 }
 
+export function BuildDebug(arg1) {
+  return window['go']['main']['App']['BuildDebug'](arg1);
+}
+
+export function BuildInstallLaunch(arg1) {
+  return window['go']['main']['App']['BuildInstallLaunch'](arg1);
+}
+
 export function ClearLogs() {
   return window['go']['main']['App']['ClearLogs']();
 }
@@ -24,6 +32,10 @@ export function ExportLogs(arg1) {
 
 export function FindADB(arg1) {
   return window['go']['main']['App']['FindADB'](arg1);
+}
+
+export function FindLatestAPK(arg1) {
+  return window['go']['main']['App']['FindLatestAPK'](arg1);
 }
 
 export function GenerateAIContext(arg1, arg2) {
@@ -46,12 +58,36 @@ export function GetPackagePIDState() {
   return window['go']['main']['App']['GetPackagePIDState']();
 }
 
+export function GetProjectConfig() {
+  return window['go']['main']['App']['GetProjectConfig']();
+}
+
+export function InstallAPK(arg1, arg2) {
+  return window['go']['main']['App']['InstallAPK'](arg1, arg2);
+}
+
+export function LaunchApp(arg1) {
+  return window['go']['main']['App']['LaunchApp'](arg1);
+}
+
 export function ListDevices() {
   return window['go']['main']['App']['ListDevices']();
 }
 
 export function ListPackages(arg1, arg2) {
   return window['go']['main']['App']['ListPackages'](arg1, arg2);
+}
+
+export function SaveProjectConfig(arg1) {
+  return window['go']['main']['App']['SaveProjectConfig'](arg1);
+}
+
+export function SelectProjectDirectory() {
+  return window['go']['main']['App']['SelectProjectDirectory']();
+}
+
+export function SetActiveDevice(arg1) {
+  return window['go']['main']['App']['SetActiveDevice'](arg1);
 }
 
 export function SetTrackedPackage(arg1, arg2) {

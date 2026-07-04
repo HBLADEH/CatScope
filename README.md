@@ -45,7 +45,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, and local AI Context Generator are available. Build / Install / Launch is planned or in progress.
+CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, and a minimal Build / Install / Launch workflow are available.
 
 ## Features
 
@@ -88,13 +88,17 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
   - [x] Include device/package/PID metadata, analysis summary, related logs, context logs, key frames, and suggestions.
   - [x] Copy the Markdown to the clipboard or export it as a `.md` file.
   - [x] Avoid OpenAI, Claude, Gemini, or any cloud model calls.
-- [ ] Build / Install / Launch
-  - [ ] Build APKs.
-  - [ ] Push APKs to devices.
-  - [ ] Install target apps.
-  - [ ] Launch target apps.
+- [x] Build / Install / Launch MVP
+  - [x] Select an Android project directory and detect `gradlew` / `gradlew.bat`.
+  - [x] Validate `settings.gradle` / `settings.gradle.kts`.
+  - [x] Run `assembleDebug` by default.
+  - [x] Find the newest debug APK under `build/outputs/apk`.
+  - [x] Install APKs with `adb install -r` and optional `-d`, `-g`, `-t`.
+  - [x] Launch the configured package with `adb shell monkey -p <package> 1`.
+  - [x] Send install failures to the Install Error Analyzer and Analysis panel.
 - [ ] Offline historical log viewer.
 - [ ] More export formats: jsonl, csv, zip.
+- [ ] Module and variant selection for Build / Install / Launch.
 - [ ] macOS and Linux support.
 
 ## Quick Start
@@ -157,7 +161,7 @@ Vue 3 keeps the desktop-tool UI easy to evolve. Naive UI fits dark themes, forms
 
 ## Project Scope
 
-CatScope focuses on Android troubleshooting workflows around Logcat. The first goal is an excellent Logcat Viewer; build, install, launch, crash analysis, and AI-ready context are adjacent workflows that support the same debugging loop.
+CatScope focuses on Android troubleshooting workflows around Logcat. The first goal is an excellent Logcat Viewer; build, install, launch, crash analysis, and AI-ready context are adjacent workflows that support the same debugging loop. The current build runner is intentionally small: it runs Gradle wrapper tasks such as the default `assembleDebug`, but it is not Gradle Project Sync and it is not a full IDE.
 
 CatScope is not intended to provide:
 
@@ -185,7 +189,7 @@ CatScope is not intended to provide:
 
 1. Make the Logcat Viewer fast, filterable, searchable, and comfortable for long sessions.
 2. Keep improving the rule-based Analyzer and AI context generation.
-3. Add Build / Install / Launch to complete the basic daily debugging loop.
+3. Expand Build / Install / Launch with module and variant selection.
 4. Improve cross-platform behavior and historical log analysis.
 
 See [docs/ROADMAP.md](./docs/ROADMAP.md) for the full roadmap.

@@ -4,6 +4,8 @@ import { darkTheme, NIcon, type SelectOption } from 'naive-ui'
 import {
   AnalyticsOutline,
   DownloadOutline,
+  FolderOpenOutline,
+  HammerOutline,
   PauseOutline,
   PlayOutline,
   RefreshOutline,
@@ -60,6 +62,7 @@ function handlePackageModeChange(value: string | number | null) {
 }
 
 onMounted(() => {
+  void store.loadProjectConfig()
   void store.refreshDevices()
 })
 
@@ -172,6 +175,90 @@ onUnmounted(() => {
 
           <section class="workspace">
             <aside class="device-panel">
+              <section class="project-panel">
+                <h2>Project</h2>
+                <div class="project-path-row">
+                  <n-input
+                    v-model:value="store.projectConfig.projectPath"
+                    placeholder="Android project path"
+                    @blur="store.saveProjectConfig"
+                  />
+                  <n-button tertiary @click="store.chooseProjectDirectory">
+                    <template #icon>
+                      <n-icon :component="FolderOpenOutline" />
+                    </template>
+                  </n-button>
+                </div>
+                <n-input
+                  v-model:value="store.projectConfig.packageName"
+                  class="project-input"
+                  placeholder="Package name"
+                  @blur="store.saveProjectConfig"
+                />
+                <n-input
+                  v-model:value="store.projectConfig.lastApkPath"
+                  class="project-input"
+                  placeholder="APK path"
+                  @blur="store.saveProjectConfig"
+                />
+
+                <div class="install-options">
+                  <n-checkbox v-model:checked="store.projectConfig.installOptions.allowDowngrade" @update:checked="store.saveProjectConfig">
+                    -d
+                  </n-checkbox>
+                  <n-checkbox v-model:checked="store.projectConfig.installOptions.grantPermissions" @update:checked="store.saveProjectConfig">
+                    -g
+                  </n-checkbox>
+                  <n-checkbox v-model:checked="store.projectConfig.installOptions.allowTestOnly" @update:checked="store.saveProjectConfig">
+                    -t
+                  </n-checkbox>
+                </div>
+
+                <div class="project-actions">
+                  <n-button size="small" :loading="store.buildLoading" :disabled="!store.canBuildProject" @click="store.buildDebug">
+                    <template #icon>
+                      <n-icon :component="HammerOutline" />
+                    </template>
+                    Build Debug
+                  </n-button>
+                  <n-button size="small" tertiary :disabled="!store.canBuildProject" @click="store.findLatestAPK">
+                    Find APK
+                  </n-button>
+                  <n-button size="small" :loading="store.installLoading" :disabled="!store.canInstallAPK" @click="store.installAPK()">
+                    Install APK
+                  </n-button>
+                  <n-button size="small" :loading="store.buildLoading || store.installLoading" :disabled="!store.canBuildProject || !store.canUseDeviceActions" @click="store.buildAndInstall">
+                    Build + Install
+                  </n-button>
+                  <n-button size="small" :loading="store.launchLoading" :disabled="!store.canLaunchProject" @click="store.launchApp">
+                    <template #icon>
+                      <n-icon :component="PlayOutline" />
+                    </template>
+                    Launch App
+                  </n-button>
+                  <n-button size="small" type="primary" :loading="store.buildLoading || store.installLoading || store.launchLoading" :disabled="!store.canBuildProject || !store.canUseDeviceActions || !store.launchPackageName" @click="store.buildInstallLaunch">
+                    Build + Install + Launch
+                  </n-button>
+                </div>
+
+                <dl class="project-summary">
+                  <dt>Task</dt>
+                  <dd>{{ store.projectConfig.defaultBuildTask }}</dd>
+                  <dt>APK</dt>
+                  <dd>{{ store.latestAPK?.fileName || store.projectConfig.lastApkPath || '-' }}</dd>
+                  <dt>Build</dt>
+                  <dd>{{ store.buildResult ? (store.buildResult.success ? 'success' : 'failed') : '-' }}</dd>
+                  <dt>Install</dt>
+                  <dd>{{ store.installResult ? (store.installResult.success ? 'success' : 'failed') : '-' }}</dd>
+                </dl>
+
+                <details v-if="store.buildOutput || store.installOutput" class="project-output">
+                  <summary>Output</summary>
+                  <pre v-if="store.buildOutput">{{ store.buildOutput }}</pre>
+                  <pre v-if="store.installOutput">{{ store.installOutput }}</pre>
+                </details>
+              </section>
+
               <h2>Device</h2>
               <dl v-if="store.selectedDevice">
                 <dt>Serial</dt>

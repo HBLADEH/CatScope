@@ -1,5 +1,5 @@
 export namespace adb {
-	
+
 	export class AndroidDevice {
 	    serial: string;
 	    state: string;
@@ -9,11 +9,11 @@ export namespace adb {
 	    sdkVersion?: string;
 	    abi?: string;
 	    isEmulator?: boolean;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new AndroidDevice(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serial = source["serial"];
@@ -26,18 +26,94 @@ export namespace adb {
 	        this.isEmulator = source["isEmulator"];
 	    }
 	}
+	export class InstallOptions {
+	    allowDowngrade: boolean;
+	    grantPermissions: boolean;
+	    allowTestOnly: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new InstallOptions(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.allowDowngrade = source["allowDowngrade"];
+	        this.grantPermissions = source["grantPermissions"];
+	        this.allowTestOnly = source["allowTestOnly"];
+	    }
+	}
+	export class InstallResult {
+	    success: boolean;
+	    apkPath: string;
+	    durationMillis: number;
+	    output: string;
+	    error?: string;
+	    analysisResults?: logcat.AnalysisResult[];
+
+	    static createFrom(source: any = {}) {
+	        return new InstallResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.apkPath = source["apkPath"];
+	        this.durationMillis = source["durationMillis"];
+	        this.output = source["output"];
+	        this.error = source["error"];
+	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class InstalledPackage {
 	    packageName: string;
 	    label?: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new InstalledPackage(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.packageName = source["packageName"];
 	        this.label = source["label"];
+	    }
+	}
+	export class LaunchResult {
+	    success: boolean;
+	    packageName: string;
+	    durationMillis: number;
+	    output: string;
+	    error?: string;
+
+	    static createFrom(source: any = {}) {
+	        return new LaunchResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.packageName = source["packageName"];
+	        this.durationMillis = source["durationMillis"];
+	        this.output = source["output"];
+	        this.error = source["error"];
 	    }
 	}
 
@@ -82,8 +158,73 @@ export namespace ai {
 
 }
 
+export namespace build {
+
+	export class APKInfo {
+	    apkPath: string;
+	    fileName: string;
+	    modifiedTime: string;
+	    size: number;
+
+	    static createFrom(source: any = {}) {
+	        return new APKInfo(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.apkPath = source["apkPath"];
+	        this.fileName = source["fileName"];
+	        this.modifiedTime = source["modifiedTime"];
+	        this.size = source["size"];
+	    }
+	}
+	export class BuildResult {
+	    success: boolean;
+	    projectPath: string;
+	    task: string;
+	    durationMillis: number;
+	    output: string;
+	    error?: string;
+	    apk?: APKInfo;
+
+	    static createFrom(source: any = {}) {
+	        return new BuildResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.projectPath = source["projectPath"];
+	        this.task = source["task"];
+	        this.durationMillis = source["durationMillis"];
+	        this.output = source["output"];
+	        this.error = source["error"];
+	        this.apk = this.convertValues(source["apk"], APKInfo);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace logcat {
-	
+
 	export class AnalysisResult {
 	    id: string;
 	    type: string;
@@ -105,11 +246,11 @@ export namespace logcat {
 	    relatedEntryIds?: number[];
 	    rawText?: string;
 	    suggestions?: string[];
-	
+
 	    static createFrom(source: any = {}) {
 	        return new AnalysisResult(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -145,11 +286,11 @@ export namespace logcat {
 	    packageName?: string;
 	    raw: string;
 	    multiline?: string[];
-	
+
 	    static createFrom(source: any = {}) {
 	        return new LogEntry(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -169,11 +310,11 @@ export namespace logcat {
 	    count: number;
 	    discardedCount: number;
 	    lastID: number;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new LogBatch(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.entries = this.convertValues(source["entries"], LogEntry);
@@ -181,7 +322,7 @@ export namespace logcat {
 	        this.discardedCount = source["discardedCount"];
 	        this.lastID = source["lastID"];
 	    }
-	
+
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -200,7 +341,7 @@ export namespace logcat {
 		    return a;
 		}
 	}
-	
+
 	export class LogStatus {
 	    running: boolean;
 	    serial: string;
@@ -209,11 +350,11 @@ export namespace logcat {
 	    discardedCount: number;
 	    lastID: number;
 	    adbPath?: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new LogStatus(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.running = source["running"];
@@ -230,11 +371,11 @@ export namespace logcat {
 	    pids: number[];
 	    knownPids: number[];
 	    lastPid?: number;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new PackagePIDState(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.packageName = source["packageName"];
@@ -242,6 +383,94 @@ export namespace logcat {
 	        this.knownPids = source["knownPids"];
 	        this.lastPid = source["lastPid"];
 	    }
+	}
+
+}
+
+export namespace main {
+
+	export class BuildInstallLaunchResult {
+	    build: build.BuildResult;
+	    install: adb.InstallResult;
+	    launch: adb.LaunchResult;
+	    packageName: string;
+	    apk?: build.APKInfo;
+	    analysisResults?: logcat.AnalysisResult[];
+
+	    static createFrom(source: any = {}) {
+	        return new BuildInstallLaunchResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.build = this.convertValues(source["build"], build.BuildResult);
+	        this.install = this.convertValues(source["install"], adb.InstallResult);
+	        this.launch = this.convertValues(source["launch"], adb.LaunchResult);
+	        this.packageName = source["packageName"];
+	        this.apk = this.convertValues(source["apk"], build.APKInfo);
+	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace workspace {
+
+	export class ProjectConfig {
+	    projectPath: string;
+	    packageName: string;
+	    lastApkPath: string;
+	    defaultBuildTask: string;
+	    installOptions: adb.InstallOptions;
+
+	    static createFrom(source: any = {}) {
+	        return new ProjectConfig(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectPath = source["projectPath"];
+	        this.packageName = source["packageName"];
+	        this.lastApkPath = source["lastApkPath"];
+	        this.defaultBuildTask = source["defaultBuildTask"];
+	        this.installOptions = this.convertValues(source["installOptions"], adb.InstallOptions);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

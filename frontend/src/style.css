@@ -80,7 +80,7 @@ input {
 
 .workspace {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr) 320px;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
   min-height: 0;
 }
 
@@ -94,6 +94,7 @@ input {
 
 .device-panel {
   border-right: 1px solid #2b302c;
+  overflow: auto;
 }
 
 .details-panel {
@@ -107,6 +108,63 @@ input {
   color: #eef2ec;
   font-size: 13px;
   text-transform: uppercase;
+}
+
+.project-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2b302c;
+}
+
+.project-path-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+}
+
+.project-input {
+  width: 100%;
+}
+
+.install-options,
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.install-options {
+  color: #b8c1ba;
+  font-size: 12px;
+}
+
+.project-summary {
+  margin-top: 4px;
+}
+
+.project-output summary {
+  color: #9ee6ad;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.project-output pre {
+  max-height: 180px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid #30362f;
+  border-radius: 6px;
+  background: #111311;
+  color: #dce3dc;
+  font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 dl {

@@ -4,17 +4,36 @@ import { defineStore } from 'pinia'
 import type {
   AnalysisResult,
   AIContextOptions,
+  APKInfo,
   AndroidDevice,
+  BuildResult,
   InstalledPackage,
+  InstallResult,
   LogBatch,
   LogEntry,
   LogStatus,
-  PackagePIDState
+  PackagePIDState,
+  ProjectConfig,
+  LaunchResult
 } from '@/types/backend'
 import { backend } from '@/utils/wails'
 
 const ALL_LEVELS = ['V', 'D', 'I', 'W', 'E', 'F']
 const UI_LOG_LIMIT = 100000
+
+function defaultProjectConfig(): ProjectConfig {
+  return {
+    projectPath: '',
+    packageName: '',
+    lastApkPath: '',
+    defaultBuildTask: 'assembleDebug',
+    installOptions: {
+      allowDowngrade: false,
+      grantPermissions: true,
+      allowTestOnly: false
+    }
+  }
+}
 
 export const useLogStore = defineStore('logs', () => {
   const devices = ref<AndroidDevice[]>([])
@@ -41,12 +60,27 @@ export const useLogStore = defineStore('logs', () => {
     discardedCount: 0,
     lastID: 0
   })
+  const projectConfig = ref<ProjectConfig>(defaultProjectConfig())
+  const latestAPK = ref<APKInfo | null>(null)
+  const buildResult = ref<BuildResult | null>(null)
+  const installResult = ref<InstallResult | null>(null)
+  const launchResult = ref<LaunchResult | null>(null)
+  const buildOutput = ref('')
+  const installOutput = ref('')
+  const buildLoading = ref(false)
+  const installLoading = ref(false)
+  const launchLoading = ref(false)
 
   const running = computed(() => status.value.running)
   const selectedDevice = computed(() => devices.value.find((device) => device.serial === selectedSerial.value))
   const selectedDeviceState = computed(() => selectedDevice.value?.state ?? 'unknown')
   const canStart = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
   const canSelectPackage = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
+  const canUseDeviceActions = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
+  const canBuildProject = computed(() => Boolean(projectConfig.value.projectPath.trim()))
+  const canInstallAPK = computed(() => canUseDeviceActions.value && Boolean(projectConfig.value.lastApkPath.trim()))
+  const launchPackageName = computed(() => projectConfig.value.packageName.trim() || selectedPackage.value)
+  const canLaunchProject = computed(() => canUseDeviceActions.value && Boolean(launchPackageName.value))
   const currentPIDs = computed(() => packagePIDState.value.pids ?? [])
   const knownPIDs = computed(() => packagePIDState.value.knownPids ?? [])
   const packageHint = computed(() => {
@@ -223,6 +257,7 @@ export const useLogStore = defineStore('logs', () => {
       await stop()
     }
     selectedSerial.value = nextSerial
+    await backend.setActiveDevice(nextSerial)
     selectedPackage.value = ''
     packages.value = []
     packagePIDState.value = { packageName: '' }
@@ -257,6 +292,10 @@ export const useLogStore = defineStore('logs', () => {
 
   async function selectPackage(packageName: string | null) {
     selectedPackage.value = packageName ?? ''
+    if (selectedPackage.value && projectConfig.value.packageName !== selectedPackage.value) {
+      projectConfig.value.packageName = selectedPackage.value
+      void saveProjectConfig()
+    }
     selectedLog.value = null
     packagePIDState.value = { packageName: selectedPackage.value }
     if (!selectedSerial.value) {
@@ -327,6 +366,196 @@ export const useLogStore = defineStore('logs', () => {
       throw new Error('请先选择一个分析结果。')
     }
     return await backend.exportAIContext(targetID, defaultAIContextOptions())
+  }
+
+  async function loadProjectConfig() {
+    try {
+      const config = await backend.getProjectConfig()
+      projectConfig.value = {
+        ...defaultProjectConfig(),
+        ...config,
+        installOptions: {
+          ...defaultProjectConfig().installOptions,
+          ...(config.installOptions ?? {})
+        }
+      }
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function saveProjectConfig() {
+    try {
+      await backend.saveProjectConfig(projectConfig.value)
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function chooseProjectDirectory() {
+    try {
+      const path = await backend.selectProjectDirectory()
+      if (!path) {
+        return
+      }
+      projectConfig.value.projectPath = path
+      await saveProjectConfig()
+      notice.value = `Project selected: ${path}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function findLatestAPK() {
+    error.value = ''
+    notice.value = ''
+    try {
+      const apk = await backend.findLatestAPK(projectConfig.value.projectPath)
+      latestAPK.value = apk
+      projectConfig.value.lastApkPath = apk.apkPath
+      await saveProjectConfig()
+      notice.value = `Found APK: ${apk.fileName}`
+      return apk
+    } catch (err) {
+      setError(err)
+      return null
+    }
+  }
+
+  async function buildDebug() {
+    buildLoading.value = true
+    error.value = ''
+    notice.value = ''
+    buildOutput.value = ''
+    try {
+      await saveProjectConfig()
+      const result = await backend.buildDebug(projectConfig.value.projectPath)
+      buildResult.value = result
+      buildOutput.value = result.output || result.error || ''
+      if (result.apk) {
+        latestAPK.value = result.apk
+        projectConfig.value.lastApkPath = result.apk.apkPath
+        await saveProjectConfig()
+      }
+      if (result.success) {
+        notice.value = `Build succeeded: ${result.apk?.fileName ?? 'APK generated'}`
+      } else {
+        error.value = result.error || 'Build failed.'
+      }
+      return result
+    } catch (err) {
+      setError(err)
+      return null
+    } finally {
+      buildLoading.value = false
+    }
+  }
+
+  async function installAPK(apkPath = projectConfig.value.lastApkPath) {
+    installLoading.value = true
+    error.value = ''
+    notice.value = ''
+    installOutput.value = ''
+    try {
+      const result = await backend.installAPK(apkPath, projectConfig.value.installOptions)
+      installResult.value = result
+      installOutput.value = result.output || result.error || ''
+      mergeAnalysisResults(result.analysisResults ?? [])
+      if (result.success) {
+        projectConfig.value.lastApkPath = result.apkPath
+        await saveProjectConfig()
+        notice.value = 'Install succeeded.'
+      } else {
+        error.value = result.error || 'Install failed.'
+      }
+      return result
+    } catch (err) {
+      setError(err)
+      return null
+    } finally {
+      installLoading.value = false
+    }
+  }
+
+  async function buildAndInstall() {
+    const built = await buildDebug()
+    if (!built?.success || !built.apk) {
+      return
+    }
+    await installAPK(built.apk.apkPath)
+  }
+
+  async function launchApp() {
+    launchLoading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      const packageName = launchPackageName.value
+      const result = await backend.launchApp(packageName)
+      launchResult.value = result
+      if (result.success) {
+        projectConfig.value.packageName = result.packageName
+        await saveProjectConfig()
+        await selectPackage(result.packageName)
+        await fetchPackagePIDState()
+        notice.value = running.value
+          ? `Launched ${result.packageName}.`
+          : `Launched ${result.packageName}. Start Logcat to stream logs.`
+      } else {
+        error.value = result.error || 'Launch failed.'
+      }
+      return result
+    } catch (err) {
+      setError(err)
+      return null
+    } finally {
+      launchLoading.value = false
+    }
+  }
+
+  async function buildInstallLaunch() {
+    buildLoading.value = true
+    installLoading.value = true
+    launchLoading.value = true
+    error.value = ''
+    notice.value = ''
+    buildOutput.value = ''
+    installOutput.value = ''
+    try {
+      await saveProjectConfig()
+      const result = await backend.buildInstallLaunch(projectConfig.value)
+      buildResult.value = result.build
+      installResult.value = result.install
+      launchResult.value = result.launch
+      buildOutput.value = result.build?.output || result.build?.error || ''
+      installOutput.value = result.install?.output || result.install?.error || ''
+      mergeAnalysisResults(result.analysisResults ?? result.install?.analysisResults ?? [])
+      if (result.apk) {
+        latestAPK.value = result.apk
+        projectConfig.value.lastApkPath = result.apk.apkPath
+      }
+      if (result.launch?.success) {
+        projectConfig.value.packageName = result.launch.packageName
+        await saveProjectConfig()
+        await selectPackage(result.launch.packageName)
+        await fetchPackagePIDState()
+        notice.value = running.value
+          ? `Built, installed, and launched ${result.launch.packageName}.`
+          : `Built, installed, and launched ${result.launch.packageName}. Start Logcat to stream logs.`
+      } else if (!result.build?.success) {
+        error.value = result.build?.error || 'Build failed.'
+      } else if (!result.install?.success) {
+        error.value = result.install?.error || 'Install failed.'
+      } else {
+        error.value = result.launch?.error || 'Launch did not complete.'
+      }
+    } catch (err) {
+      setError(err)
+    } finally {
+      buildLoading.value = false
+      installLoading.value = false
+      launchLoading.value = false
+    }
   }
 
   function togglePause() {
@@ -488,10 +717,25 @@ export const useLogStore = defineStore('logs', () => {
     error,
     notice,
     status,
+    projectConfig,
+    latestAPK,
+    buildResult,
+    installResult,
+    launchResult,
+    buildOutput,
+    installOutput,
+    buildLoading,
+    installLoading,
+    launchLoading,
     running,
     selectedDeviceState,
     canStart,
     canSelectPackage,
+    canUseDeviceActions,
+    canBuildProject,
+    canInstallAPK,
+    canLaunchProject,
+    launchPackageName,
     deviceHint,
     packageHint,
     tableEmptyMessage,
@@ -507,6 +751,15 @@ export const useLogStore = defineStore('logs', () => {
     exportFiltered,
     copyAIContext,
     exportAIContext,
+    loadProjectConfig,
+    saveProjectConfig,
+    chooseProjectDirectory,
+    findLatestAPK,
+    buildDebug,
+    installAPK,
+    buildAndInstall,
+    launchApp,
+    buildInstallLaunch,
     analyzeCurrentLogs,
     togglePause,
     fetchStatus,

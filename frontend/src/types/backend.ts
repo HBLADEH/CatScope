@@ -98,3 +98,60 @@ export interface AIContextOptions {
   levelFilter?: string[]
   searchKeyword?: string
 }
+
+export interface APKInfo {
+  apkPath: string
+  fileName: string
+  modifiedTime: string
+  size: number
+}
+
+export interface BuildResult {
+  success: boolean
+  projectPath: string
+  task: string
+  durationMillis: number
+  output: string
+  error?: string
+  apk?: APKInfo
+}
+
+export interface InstallOptions {
+  allowDowngrade: boolean
+  grantPermissions: boolean
+  allowTestOnly: boolean
+}
+
+export interface InstallResult {
+  success: boolean
+  apkPath: string
+  durationMillis: number
+  output: string
+  error?: string
+  analysisResults?: AnalysisResult[]
+}
+
+export interface LaunchResult {
+  success: boolean
+  packageName: string
+  durationMillis: number
+  output: string
+  error?: string
+}
+
+export interface ProjectConfig {
+  projectPath: string
+  packageName: string
+  lastApkPath: string
+  defaultBuildTask: string
+  installOptions: InstallOptions
+}
+
+export interface BuildInstallLaunchResult {
+  build: BuildResult
+  install: InstallResult
+  launch: LaunchResult
+  packageName: string
+  apk?: APKInfo
+  analysisResults?: AnalysisResult[]
+}
