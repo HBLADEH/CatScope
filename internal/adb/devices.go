@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"catscope/internal/process"
 )
 
 func ListDevices(ctx context.Context, adbPath string) ([]AndroidDevice, error) {
 	cmd := exec.CommandContext(ctx, adbPath, "devices", "-l")
+	process.HideConsoleWindow(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("adb devices failed: %w: %s", err, strings.TrimSpace(string(output)))
@@ -102,6 +105,7 @@ func GetDeviceState(ctx context.Context, adbPath, serial string) (string, error)
 
 func adbOutput(ctx context.Context, adbPath string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, adbPath, args...)
+	process.HideConsoleWindow(cmd)
 	output, err := cmd.CombinedOutput()
 	value := strings.TrimSpace(strings.ReplaceAll(string(output), "\r", ""))
 	if err != nil {

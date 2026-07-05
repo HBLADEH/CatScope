@@ -45,7 +45,11 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, lightweight Workspace / Filter Presets, and Session save / restore are available.
+Current version: **v0.6.0-preview**.
+
+CatScope is currently in Preview / Dev status. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, lightweight Workspace / Filter Presets, and Session save / restore are available.
+
+CatScope is a lightweight Android Logcat debugging workbench. It is not an Android Studio replacement, does not provide Gradle Project Sync, and does not include a code editor. The AI Context feature only generates local Markdown; CatScope does not upload logs and does not call external AI APIs.
 
 ## Features
 
@@ -125,7 +129,7 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File
 - Go 1.22 or later.
 - Node.js 20 or later and npm 10 or later.
 - Wails v2 CLI.
-- Microsoft WebView2 Runtime.
+- Windows with Microsoft WebView2 Runtime.
 - Android SDK Platform Tools, with `adb` available through one of:
   - `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
   - `platform-tools` added to `PATH`.
@@ -157,6 +161,41 @@ wails dev
 Live Logcat requires an Android device or emulator with USB debugging authorized. Offline Log File Viewer works without an Android device and can open `.txt`, `.log`, or `.jsonl` files for search, filtering, analysis, and AI Context generation. Session mode opens `.catscope-session` files, which are CatScope debugging-state files for saving live or offline analysis work and returning to it later.
 
 If the device is `unauthorized`, approve the authorization prompt on the device and refresh. If it is `offline`, reconnect the device or restart adb server and refresh.
+
+### Windows Usage
+
+For a local development build:
+
+```powershell
+scripts\check.ps1
+scripts\build-windows.ps1
+.\build\bin\CatScope.exe
+```
+
+For a GitHub Release build, download the Windows artifact, extract it if it is a portable archive, and run `CatScope.exe`. Live Logcat needs a device or emulator with USB debugging enabled. On the first USB connection, Android shows an authorization dialog on the device; accept it, then refresh the CatScope device list.
+
+### FAQ
+
+**Is CatScope an Android Studio replacement?**
+No. CatScope focuses on Logcat, crash clues, installs, launches, sessions, and local context generation. It is intentionally not a full IDE.
+
+**Does CatScope upload my logs?**
+No. Logs, sessions, workspace settings, and AI Context Markdown are local unless you manually share exported files.
+
+**Does AI Context call OpenAI, Claude, Gemini, or another cloud model?**
+No. It only creates local Markdown that you can copy or export.
+
+**Why is my device `unauthorized`?**
+The phone has not approved USB debugging for this computer. Unlock the device, accept the prompt, and refresh.
+
+**Why is my device `offline`?**
+Reconnect USB, confirm debugging is enabled, or restart adb with `adb kill-server` and refresh.
+
+**Can CatScope sync Gradle projects or edit code?**
+No. Build / Install / Launch is a basic helper workflow and does not include Gradle Project Sync or a code editor.
+
+**Is the Vite chunk size warning a release blocker?**
+No. It is currently a known build warning and does not block normal use.
 
 ## Tech Stack
 
@@ -232,6 +271,10 @@ CatScope/
 
 - [Roadmap](./docs/ROADMAP.md)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [User Guide](./docs/USER_GUIDE.md)
+- [Known Issues](./docs/KNOWN_ISSUES.md)
+- [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
+- [Screenshots Placeholder](./docs/screenshots/README.md)
 - [MVP Tasks](./docs/MVP_TASKS.md)
 - [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
 
@@ -248,11 +291,7 @@ Issues, suggestions, and pull requests are welcome. The project is still early, 
 Before submitting changes, please run:
 
 ```powershell
-go test ./...
-
-cd frontend
-npm install
-npm run build
+scripts\check.ps1
 ```
 
 ## Privacy

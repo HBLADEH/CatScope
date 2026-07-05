@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"catscope/internal/process"
 )
 
 type LaunchResult struct {
@@ -38,6 +40,7 @@ func LaunchApp(ctx context.Context, adbPath, serial, packageName string) (Launch
 	args := BuildLaunchArgs(serial, packageName)
 	started := time.Now()
 	cmd := exec.CommandContext(ctx, adbPath, args...)
+	process.HideConsoleWindow(cmd)
 	output, runErr := cmd.CombinedOutput()
 	outputText := strings.TrimSpace(strings.ReplaceAll(string(output), "\r", ""))
 	success := runErr == nil && !looksLikeMonkeyFailure(outputText)

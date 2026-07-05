@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"catscope/internal/process"
 )
 
 func FindADB(configuredPath string) (string, error) {
@@ -54,6 +56,7 @@ func validateADB(path string) error {
 		return errors.New("empty path")
 	}
 	cmd := exec.Command(path, "version")
+	process.HideConsoleWindow(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(output)))

@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+
+	"catscope/internal/process"
 )
 
 type LogcatProcess struct {
@@ -27,6 +29,7 @@ func StartLogcat(
 ) (*LogcatProcess, error) {
 	ctx, cancel := context.WithCancel(parent)
 	cmd := exec.CommandContext(ctx, adbPath, "-s", serial, "logcat", "-v", "threadtime", "-b", "main,system,crash")
+	process.HideConsoleWindow(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

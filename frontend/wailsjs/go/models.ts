@@ -1,5 +1,5 @@
 export namespace adb {
-
+	
 	export class AndroidDevice {
 	    serial: string;
 	    state: string;
@@ -9,11 +9,11 @@ export namespace adb {
 	    sdkVersion?: string;
 	    abi?: string;
 	    isEmulator?: boolean;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AndroidDevice(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serial = source["serial"];
@@ -30,11 +30,11 @@ export namespace adb {
 	    allowDowngrade: boolean;
 	    grantPermissions: boolean;
 	    allowTestOnly: boolean;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new InstallOptions(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.allowDowngrade = source["allowDowngrade"];
@@ -49,11 +49,11 @@ export namespace adb {
 	    output: string;
 	    error?: string;
 	    analysisResults?: logcat.AnalysisResult[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new InstallResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.success = source["success"];
@@ -63,7 +63,7 @@ export namespace adb {
 	        this.error = source["error"];
 	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -85,11 +85,11 @@ export namespace adb {
 	export class InstalledPackage {
 	    packageName: string;
 	    label?: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new InstalledPackage(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.packageName = source["packageName"];
@@ -102,11 +102,11 @@ export namespace adb {
 	    durationMillis: number;
 	    output: string;
 	    error?: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new LaunchResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.success = source["success"];
@@ -120,7 +120,7 @@ export namespace adb {
 }
 
 export namespace ai {
-
+	
 	export class AIContextOptions {
 	    includeDeviceInfo: boolean;
 	    includePackageInfo: boolean;
@@ -134,11 +134,11 @@ export namespace ai {
 	    packageFilter?: string;
 	    levelFilter?: string[];
 	    searchKeyword?: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AIContextOptions(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.includeDeviceInfo = source["includeDeviceInfo"];
@@ -159,17 +159,17 @@ export namespace ai {
 }
 
 export namespace build {
-
+	
 	export class APKInfo {
 	    apkPath: string;
 	    fileName: string;
 	    modifiedTime: string;
 	    size: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new APKInfo(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.apkPath = source["apkPath"];
@@ -186,11 +186,11 @@ export namespace build {
 	    output: string;
 	    error?: string;
 	    apk?: APKInfo;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new BuildResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.success = source["success"];
@@ -201,7 +201,7 @@ export namespace build {
 	        this.error = source["error"];
 	        this.apk = this.convertValues(source["apk"], APKInfo);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -224,7 +224,7 @@ export namespace build {
 }
 
 export namespace logcat {
-
+	
 	export class AnalysisResult {
 	    id: string;
 	    type: string;
@@ -246,11 +246,11 @@ export namespace logcat {
 	    relatedEntryIds?: number[];
 	    rawText?: string;
 	    suggestions?: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AnalysisResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -286,11 +286,11 @@ export namespace logcat {
 	    packageName?: string;
 	    raw: string;
 	    multiline?: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new LogEntry(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -310,11 +310,11 @@ export namespace logcat {
 	    count: number;
 	    discardedCount: number;
 	    lastID: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new LogBatch(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.entries = this.convertValues(source["entries"], LogEntry);
@@ -322,7 +322,7 @@ export namespace logcat {
 	        this.discardedCount = source["discardedCount"];
 	        this.lastID = source["lastID"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -341,7 +341,7 @@ export namespace logcat {
 		    return a;
 		}
 	}
-
+	
 	export class LogStatus {
 	    running: boolean;
 	    serial: string;
@@ -356,11 +356,11 @@ export namespace logcat {
 	    offlineParseFailedCount?: number;
 	    sessionFilePath?: string;
 	    sessionName?: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new LogStatus(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.running = source["running"];
@@ -385,11 +385,11 @@ export namespace logcat {
 	    count: number;
 	    parseFailedCount: number;
 	    analysisResults?: AnalysisResult[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new OfflineLogFileResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.filePath = source["filePath"];
@@ -399,7 +399,7 @@ export namespace logcat {
 	        this.parseFailedCount = source["parseFailedCount"];
 	        this.analysisResults = this.convertValues(source["analysisResults"], AnalysisResult);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -423,11 +423,11 @@ export namespace logcat {
 	    pids: number[];
 	    knownPids: number[];
 	    lastPid?: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new PackagePIDState(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.packageName = source["packageName"];
@@ -440,7 +440,7 @@ export namespace logcat {
 }
 
 export namespace main {
-
+	
 	export class BuildInstallLaunchResult {
 	    build: build.BuildResult;
 	    install: adb.InstallResult;
@@ -448,11 +448,11 @@ export namespace main {
 	    packageName: string;
 	    apk?: build.APKInfo;
 	    analysisResults?: logcat.AnalysisResult[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new BuildInstallLaunchResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.build = this.convertValues(source["build"], build.BuildResult);
@@ -462,7 +462,7 @@ export namespace main {
 	        this.apk = this.convertValues(source["apk"], build.APKInfo);
 	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -486,11 +486,11 @@ export namespace main {
 	    summary: storage.SessionSummary;
 	    entries: logcat.LogEntry[];
 	    analysisResults: logcat.AnalysisResult[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new SessionOpenResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.session = this.convertValues(source["session"], storage.Session);
@@ -498,7 +498,7 @@ export namespace main {
 	        this.entries = this.convertValues(source["entries"], logcat.LogEntry);
 	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -522,11 +522,11 @@ export namespace main {
 	    filters: storage.SessionFilters;
 	    aiContextOptions: ai.AIContextOptions;
 	    notes: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new SessionSaveOptions(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -534,7 +534,7 @@ export namespace main {
 	        this.aiContextOptions = this.convertValues(source["aiContextOptions"], ai.AIContextOptions);
 	        this.notes = source["notes"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -557,7 +557,7 @@ export namespace main {
 }
 
 export namespace storage {
-
+	
 	export class SessionFilters {
 	    level: string[];
 	    packageName: string;
@@ -565,11 +565,11 @@ export namespace storage {
 	    regexEnabled: boolean;
 	    tags: string[];
 	    excludeKeyword: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new SessionFilters(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.level = source["level"];
@@ -600,11 +600,11 @@ export namespace storage {
 	    logEntries: logcat.LogEntry[];
 	    analysisResults: logcat.AnalysisResult[];
 	    notes: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Session(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.version = source["version"];
@@ -627,7 +627,7 @@ export namespace storage {
 	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
 	        this.notes = source["notes"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -646,7 +646,7 @@ export namespace storage {
 		    return a;
 		}
 	}
-
+	
 	export class SessionSummary {
 	    sessionId: string;
 	    name: string;
@@ -659,11 +659,11 @@ export namespace storage {
 	    packageName: string;
 	    logCount: number;
 	    analysisCount: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new SessionSummary(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.sessionId = source["sessionId"];
@@ -683,7 +683,7 @@ export namespace storage {
 }
 
 export namespace workspace {
-
+	
 	export class FilterPreset {
 	    id: string;
 	    name: string;
@@ -694,11 +694,11 @@ export namespace workspace {
 	    tags: string[];
 	    excludeKeyword: string;
 	    builtIn?: boolean;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FilterPreset(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -728,11 +728,11 @@ export namespace workspace {
 	    autoStartLogcat: boolean;
 	    autoClearOnLaunch: boolean;
 	    aiContextOptions: ai.AIContextOptions;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new WorkspaceConfig(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -751,7 +751,7 @@ export namespace workspace {
 	        this.autoClearOnLaunch = source["autoClearOnLaunch"];
 	        this.aiContextOptions = this.convertValues(source["aiContextOptions"], ai.AIContextOptions);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -774,18 +774,18 @@ export namespace workspace {
 	    activeWorkspaceId: string;
 	    workspaces: WorkspaceConfig[];
 	    filterPresets: FilterPreset[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AppConfig(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.activeWorkspaceId = source["activeWorkspaceId"];
 	        this.workspaces = this.convertValues(source["workspaces"], WorkspaceConfig);
 	        this.filterPresets = this.convertValues(source["filterPresets"], FilterPreset);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -804,18 +804,18 @@ export namespace workspace {
 		    return a;
 		}
 	}
-
+	
 	export class ProjectConfig {
 	    projectPath: string;
 	    packageName: string;
 	    lastApkPath: string;
 	    defaultBuildTask: string;
 	    installOptions: adb.InstallOptions;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ProjectConfig(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.projectPath = source["projectPath"];
@@ -824,7 +824,7 @@ export namespace workspace {
 	        this.defaultBuildTask = source["defaultBuildTask"];
 	        this.installOptions = this.convertValues(source["installOptions"], adb.InstallOptions);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -845,3 +845,4 @@ export namespace workspace {
 	}
 
 }
+

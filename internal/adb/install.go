@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"catscope/internal/logcat"
+	"catscope/internal/process"
 )
 
 type InstallOptions struct {
@@ -55,6 +56,7 @@ func InstallAPK(ctx context.Context, adbPath, serial, apkPath string, options In
 	args := BuildInstallArgs(serial, apkPath, options)
 	started := time.Now()
 	cmd := exec.CommandContext(ctx, adbPath, args...)
+	process.HideConsoleWindow(cmd)
 	output, runErr := cmd.CombinedOutput()
 	outputText := strings.TrimSpace(strings.ReplaceAll(string(output), "\r", ""))
 	result := InstallResult{

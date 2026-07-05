@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"catscope/internal/process"
 )
 
 type APKInfo struct {
@@ -55,6 +57,7 @@ func Run(ctx context.Context, request BuildRequest) (BuildResult, error) {
 
 	started := time.Now()
 	cmd := exec.CommandContext(ctx, executable, args...)
+	process.HideConsoleWindow(cmd)
 	cmd.Dir = dir
 	output, runErr := cmd.CombinedOutput()
 	duration := time.Since(started)
