@@ -434,6 +434,127 @@ export namespace main {
 
 export namespace workspace {
 
+	export class FilterPreset {
+	    id: string;
+	    name: string;
+	    level: string[];
+	    packageName: string;
+	    keyword: string;
+	    regexEnabled: boolean;
+	    tags: string[];
+	    excludeKeyword: string;
+	    builtIn?: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new FilterPreset(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.level = source["level"];
+	        this.packageName = source["packageName"];
+	        this.keyword = source["keyword"];
+	        this.regexEnabled = source["regexEnabled"];
+	        this.tags = source["tags"];
+	        this.excludeKeyword = source["excludeKeyword"];
+	        this.builtIn = source["builtIn"];
+	    }
+	}
+	export class WorkspaceConfig {
+	    id: string;
+	    workspaceName: string;
+	    projectPath: string;
+	    packageName: string;
+	    lastApkPath: string;
+	    defaultBuildTask: string;
+	    installOptions: adb.InstallOptions;
+	    selectedDeviceSerial: string;
+	    selectedLogLevel: string[];
+	    searchKeyword: string;
+	    selectedPackageMode: string;
+	    maxLogLines: number;
+	    autoStartLogcat: boolean;
+	    autoClearOnLaunch: boolean;
+	    aiContextOptions: ai.AIContextOptions;
+
+	    static createFrom(source: any = {}) {
+	        return new WorkspaceConfig(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.workspaceName = source["workspaceName"];
+	        this.projectPath = source["projectPath"];
+	        this.packageName = source["packageName"];
+	        this.lastApkPath = source["lastApkPath"];
+	        this.defaultBuildTask = source["defaultBuildTask"];
+	        this.installOptions = this.convertValues(source["installOptions"], adb.InstallOptions);
+	        this.selectedDeviceSerial = source["selectedDeviceSerial"];
+	        this.selectedLogLevel = source["selectedLogLevel"];
+	        this.searchKeyword = source["searchKeyword"];
+	        this.selectedPackageMode = source["selectedPackageMode"];
+	        this.maxLogLines = source["maxLogLines"];
+	        this.autoStartLogcat = source["autoStartLogcat"];
+	        this.autoClearOnLaunch = source["autoClearOnLaunch"];
+	        this.aiContextOptions = this.convertValues(source["aiContextOptions"], ai.AIContextOptions);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class AppConfig {
+	    activeWorkspaceId: string;
+	    workspaces: WorkspaceConfig[];
+	    filterPresets: FilterPreset[];
+
+	    static createFrom(source: any = {}) {
+	        return new AppConfig(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.activeWorkspaceId = source["activeWorkspaceId"];
+	        this.workspaces = this.convertValues(source["workspaces"], WorkspaceConfig);
+	        this.filterPresets = this.convertValues(source["filterPresets"], FilterPreset);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
 	export class ProjectConfig {
 	    projectPath: string;
 	    packageName: string;

@@ -113,6 +113,10 @@ func (a *App) SetActiveDevice(serial string) {
 	a.mu.Lock()
 	a.serial = strings.TrimSpace(serial)
 	a.mu.Unlock()
+	a.updateActiveWorkspace(func(config workspace.WorkspaceConfig) workspace.WorkspaceConfig {
+		config.SelectedDeviceSerial = strings.TrimSpace(serial)
+		return config
+	})
 }
 
 func (a *App) ListPackages(serial string, mode string) ([]adb.InstalledPackage, error) {
@@ -283,21 +287,120 @@ func (a *App) SelectProjectDirectory() (string, error) {
 }
 
 func (a *App) GetProjectConfig() (workspace.ProjectConfig, error) {
-	config, err := workspace.LoadProjectConfig(workspace.DefaultProjectConfigPath())
+	config, err := a.LoadConfig()
 	if err != nil {
-		a.setLastError(err.Error())
 		return workspace.ProjectConfig{}, err
 	}
-	return config, nil
+	return workspace.ProjectFromWorkspace(workspace.ActiveWorkspace(config)), nil
 }
 
 func (a *App) SaveProjectConfig(config workspace.ProjectConfig) error {
-	if err := workspace.SaveProjectConfig(workspace.DefaultProjectConfigPath(), config); err != nil {
+	return a.updateActiveWorkspace(func(current workspace.WorkspaceConfig) workspace.WorkspaceConfig {
+		return workspace.WorkspaceFromProject(current, config)
+	})
+}
+
+func (a *App) LoadConfig() (workspace.AppConfig, error) {
+	config, err := workspace.LoadConfig(workspace.DefaultConfigPath())
+	if err != nil {
+		a.setLastError(err.Error())
+		return workspace.AppConfig{}, err
+	}
+	a.setLastError("")
+	return config, nil
+}
+
+func (a *App) SaveConfig(config workspace.AppConfig) error {
+	if err := workspace.SaveConfig(workspace.DefaultConfigPath(), config); err != nil {
 		a.setLastError(err.Error())
 		return err
 	}
 	a.setLastError("")
 	return nil
+}
+
+func (a *App) ResetConfig() (workspace.AppConfig, error) {
+	config := workspace.DefaultAppConfig()
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) ListWorkspaces() ([]workspace.WorkspaceConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return config.Workspaces, nil
+}
+
+func (a *App) SaveWorkspace(next workspace.WorkspaceConfig) (workspace.AppConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return workspace.AppConfig{}, err
+	}
+	config = workspace.SaveWorkspace(config, next)
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) DeleteWorkspace(id string) (workspace.AppConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return workspace.AppConfig{}, err
+	}
+	config = workspace.DeleteWorkspace(config, id)
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) SetActiveWorkspace(id string) (workspace.AppConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return workspace.AppConfig{}, err
+	}
+	config = workspace.SetActiveWorkspace(config, id)
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) ListFilterPresets() ([]workspace.FilterPreset, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return config.FilterPresets, nil
+}
+
+func (a *App) SaveFilterPreset(preset workspace.FilterPreset) (workspace.AppConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return workspace.AppConfig{}, err
+	}
+	config = workspace.SaveFilterPreset(config, preset)
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
+}
+
+func (a *App) DeleteFilterPreset(id string) (workspace.AppConfig, error) {
+	config, err := a.LoadConfig()
+	if err != nil {
+		return workspace.AppConfig{}, err
+	}
+	config = workspace.DeleteFilterPreset(config, id)
+	if err := a.SaveConfig(config); err != nil {
+		return workspace.AppConfig{}, err
+	}
+	return config, nil
 }
 
 func (a *App) BuildDebug(projectPath string) (build.BuildResult, error) {
@@ -663,15 +766,19 @@ func (a *App) storeAnalysisResults(results []logcat.AnalysisResult) {
 }
 
 func (a *App) updateProjectConfig(update func(workspace.ProjectConfig) workspace.ProjectConfig) {
-	path := workspace.DefaultProjectConfigPath()
-	if strings.TrimSpace(path) == "" {
-		return
-	}
-	config, err := workspace.LoadProjectConfig(path)
+	_ = a.updateActiveWorkspace(func(current workspace.WorkspaceConfig) workspace.WorkspaceConfig {
+		return workspace.WorkspaceFromProject(current, update(workspace.ProjectFromWorkspace(current)))
+	})
+}
+
+func (a *App) updateActiveWorkspace(update func(workspace.WorkspaceConfig) workspace.WorkspaceConfig) error {
+	config, err := workspace.LoadConfig(workspace.DefaultConfigPath())
 	if err != nil {
-		return
+		return err
 	}
-	_ = workspace.SaveProjectConfig(path, update(config))
+	active := update(workspace.ActiveWorkspace(config))
+	config = workspace.SaveWorkspace(config, active)
+	return workspace.SaveConfig(workspace.DefaultConfigPath(), config)
 }
 
 func (a *App) findAnalysisResult(resultID string) (logcat.AnalysisResult, error) {

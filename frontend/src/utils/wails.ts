@@ -1,10 +1,12 @@
 import type {
   AnalysisResult,
   AIContextOptions,
+  AppConfig,
   APKInfo,
   AndroidDevice,
   BuildInstallLaunchResult,
   BuildResult,
+  FilterPreset,
   InstalledPackage,
   InstallOptions,
   InstallResult,
@@ -13,6 +15,7 @@ import type {
   LogEntry,
   PackagePIDState,
   ProjectConfig,
+  WorkspaceConfig,
   LogStatus
 } from '@/types/backend'
 
@@ -33,6 +36,16 @@ export const backend = {
   listPackages: (serial: string, mode: string) => call<InstalledPackage[]>('ListPackages', serial, mode),
   setTrackedPackage: (serial: string, packageName: string) => call<void>('SetTrackedPackage', serial, packageName),
   getPackagePIDState: () => call<PackagePIDState>('GetPackagePIDState'),
+  loadConfig: () => call<AppConfig>('LoadConfig'),
+  saveConfig: (config: AppConfig) => call<void>('SaveConfig', config),
+  resetConfig: () => call<AppConfig>('ResetConfig'),
+  listWorkspaces: () => call<WorkspaceConfig[]>('ListWorkspaces'),
+  saveWorkspace: (workspace: WorkspaceConfig) => call<AppConfig>('SaveWorkspace', workspace),
+  deleteWorkspace: (id: string) => call<AppConfig>('DeleteWorkspace', id),
+  setActiveWorkspace: (id: string) => call<AppConfig>('SetActiveWorkspace', id),
+  listFilterPresets: () => call<FilterPreset[]>('ListFilterPresets'),
+  saveFilterPreset: (preset: FilterPreset) => call<AppConfig>('SaveFilterPreset', preset),
+  deleteFilterPreset: (id: string) => call<AppConfig>('DeleteFilterPreset', id),
   selectProjectDirectory: () => call<string>('SelectProjectDirectory'),
   getProjectConfig: () => call<ProjectConfig>('GetProjectConfig'),
   saveProjectConfig: (config: ProjectConfig) => call<void>('SaveProjectConfig', config),

@@ -4,9 +4,11 @@ import { defineStore } from 'pinia'
 import type {
   AnalysisResult,
   AIContextOptions,
+  AppConfig,
   APKInfo,
   AndroidDevice,
   BuildResult,
+  FilterPreset,
   InstalledPackage,
   InstallResult,
   LogBatch,
@@ -14,7 +16,8 @@ import type {
   LogStatus,
   PackagePIDState,
   ProjectConfig,
-  LaunchResult
+  LaunchResult,
+  WorkspaceConfig
 } from '@/types/backend'
 import { backend } from '@/utils/wails'
 
@@ -35,7 +38,51 @@ function defaultProjectConfig(): ProjectConfig {
   }
 }
 
+function defaultAIContextOptions(): AIContextOptions {
+  return {
+    includeDeviceInfo: true,
+    includePackageInfo: true,
+    includeAnalysisSummary: true,
+    includeRelatedLogs: true,
+    includeBeforeContextLines: 50,
+    includeAfterContextLines: 50,
+    includeRawText: true,
+    includeSuggestions: true,
+    language: 'zh-CN'
+  }
+}
+
+function defaultAppConfig(): AppConfig {
+  const workspace = defaultWorkspaceConfig()
+  return {
+    activeWorkspaceId: workspace.id,
+    workspaces: [workspace],
+    filterPresets: []
+  }
+}
+
+function defaultWorkspaceConfig(): WorkspaceConfig {
+  return {
+    id: 'default',
+    workspaceName: 'Default Workspace',
+    projectPath: '',
+    packageName: '',
+    lastApkPath: '',
+    defaultBuildTask: 'assembleDebug',
+    installOptions: defaultProjectConfig().installOptions,
+    selectedDeviceSerial: '',
+    selectedLogLevel: [...ALL_LEVELS],
+    searchKeyword: '',
+    selectedPackageMode: 'thirdParty',
+    maxLogLines: UI_LOG_LIMIT,
+    autoStartLogcat: false,
+    autoClearOnLaunch: false,
+    aiContextOptions: defaultAIContextOptions()
+  }
+}
+
 export const useLogStore = defineStore('logs', () => {
+  const initialConfig = defaultAppConfig()
   const devices = ref<AndroidDevice[]>([])
   const selectedSerial = ref('')
   const logs = ref<LogEntry[]>([])
@@ -49,6 +96,9 @@ export const useLogStore = defineStore('logs', () => {
   const packagePIDState = ref<PackagePIDState>({ packageName: '' })
   const levels = ref<string[]>([...ALL_LEVELS])
   const search = ref('')
+  const regexEnabled = ref(false)
+  const tagFilter = ref('')
+  const excludeKeyword = ref('')
   const paused = ref(false)
   const loading = ref(false)
   const error = ref('')
@@ -70,6 +120,17 @@ export const useLogStore = defineStore('logs', () => {
   const buildLoading = ref(false)
   const installLoading = ref(false)
   const launchLoading = ref(false)
+  const appConfig = ref<AppConfig>(initialConfig)
+  const workspaces = ref<WorkspaceConfig[]>(initialConfig.workspaces)
+  const activeWorkspaceID = ref(initialConfig.activeWorkspaceId)
+  const filterPresets = ref<FilterPreset[]>(initialConfig.filterPresets)
+  const selectedPresetID = ref('')
+  const presetDraftName = ref('')
+  const presetManagerOpen = ref(false)
+  const aiContextOptions = ref<AIContextOptions>(defaultAIContextOptions())
+  const workspaceName = ref('Default Workspace')
+  const autoStartLogcat = ref(false)
+  const autoClearOnLaunch = ref(false)
 
   const running = computed(() => status.value.running)
   const selectedDevice = computed(() => devices.value.find((device) => device.serial === selectedSerial.value))
@@ -81,6 +142,21 @@ export const useLogStore = defineStore('logs', () => {
   const canInstallAPK = computed(() => canUseDeviceActions.value && Boolean(projectConfig.value.lastApkPath.trim()))
   const launchPackageName = computed(() => projectConfig.value.packageName.trim() || selectedPackage.value)
   const canLaunchProject = computed(() => canUseDeviceActions.value && Boolean(launchPackageName.value))
+  const activeWorkspace = computed(() =>
+    workspaces.value.find((workspace) => workspace.id === activeWorkspaceID.value) ?? null
+  )
+  const workspaceOptions = computed(() =>
+    workspaces.value.map((workspace) => ({
+      label: workspace.workspaceName,
+      value: workspace.id
+    }))
+  )
+  const presetOptions = computed(() =>
+    filterPresets.value.map((preset) => ({
+      label: preset.name,
+      value: preset.id
+    }))
+  )
   const currentPIDs = computed(() => packagePIDState.value.pids ?? [])
   const knownPIDs = computed(() => packagePIDState.value.knownPids ?? [])
   const packageHint = computed(() => {
@@ -131,6 +207,9 @@ export const useLogStore = defineStore('logs', () => {
   const filteredLogs = computed(() => {
     const activeLevels = new Set(levels.value)
     const keyword = search.value.trim().toLowerCase()
+    const exclude = excludeKeyword.value.trim().toLowerCase()
+    const tags = parseTags(tagFilter.value)
+    const regex = regexEnabled.value && search.value.trim() ? safeRegex(search.value.trim()) : null
 
     return logs.value.filter((entry) => {
       if (!activeLevels.has(entry.level)) {
@@ -139,17 +218,20 @@ export const useLogStore = defineStore('logs', () => {
       if (selectedPackage.value && entry.packageName !== selectedPackage.value) {
         return false
       }
-      if (!keyword) {
-        return true
+      if (tags.length > 0 && !tags.some((tag) => entry.tag.toLowerCase().includes(tag))) {
+        return false
       }
-      const haystack = [
-        entry.tag,
-        entry.message,
-        entry.raw,
-        ...(entry.multiline ?? [])
-      ]
-        .join('\n')
-        .toLowerCase()
+      if (!keyword) {
+        return !exclude || !entryHaystack(entry).toLowerCase().includes(exclude)
+      }
+      const rawHaystack = entryHaystack(entry)
+      const haystack = rawHaystack.toLowerCase()
+      if (exclude && haystack.includes(exclude)) {
+        return false
+      }
+      if (regexEnabled.value) {
+        return Boolean(regex?.test(rawHaystack))
+      }
       return haystack.includes(keyword)
     })
   })
@@ -182,9 +264,14 @@ export const useLogStore = defineStore('logs', () => {
       if (!enriched.some((device) => device.serial === selectedSerial.value)) {
         await selectDevice(enriched[0]?.serial ?? '')
       } else if (selectedSerial.value) {
+        await backend.setActiveDevice(selectedSerial.value)
         await refreshPackages()
       }
       await fetchStatus()
+      if (autoStartLogcat.value && canStart.value) {
+        notice.value = 'Auto-starting Logcat for restored workspace.'
+        await start()
+      }
     } catch (err) {
       setError(err)
     } finally {
@@ -335,17 +422,10 @@ export const useLogStore = defineStore('logs', () => {
     }
   }
 
-  function defaultAIContextOptions(): AIContextOptions {
+  function contextOptionsForRequest(): AIContextOptions {
     return {
-      includeDeviceInfo: true,
-      includePackageInfo: true,
-      includeAnalysisSummary: true,
-      includeRelatedLogs: true,
-      includeBeforeContextLines: 50,
-      includeAfterContextLines: 50,
-      includeRawText: true,
-      includeSuggestions: true,
-      language: 'zh-CN',
+      ...defaultAIContextOptions(),
+      ...aiContextOptions.value,
       packageFilter: selectedPackage.value,
       levelFilter: [...levels.value],
       searchKeyword: search.value
@@ -357,7 +437,7 @@ export const useLogStore = defineStore('logs', () => {
     if (!targetID) {
       throw new Error('请先选择一个分析结果。')
     }
-    await backend.copyAIContext(targetID, defaultAIContextOptions())
+    await backend.copyAIContext(targetID, contextOptionsForRequest())
   }
 
   async function exportAIContext(resultID?: string) {
@@ -365,31 +445,153 @@ export const useLogStore = defineStore('logs', () => {
     if (!targetID) {
       throw new Error('请先选择一个分析结果。')
     }
-    return await backend.exportAIContext(targetID, defaultAIContextOptions())
+    return await backend.exportAIContext(targetID, contextOptionsForRequest())
   }
 
-  async function loadProjectConfig() {
+  async function loadConfig() {
     try {
-      const config = await backend.getProjectConfig()
-      projectConfig.value = {
-        ...defaultProjectConfig(),
-        ...config,
-        installOptions: {
-          ...defaultProjectConfig().installOptions,
-          ...(config.installOptions ?? {})
-        }
-      }
+      const config = await backend.loadConfig()
+      applyAppConfig(config)
     } catch (err) {
       setError(err)
     }
   }
 
   async function saveProjectConfig() {
+    await saveCurrentWorkspace()
+  }
+
+  async function resetConfig() {
     try {
-      await backend.saveProjectConfig(projectConfig.value)
+      const config = await backend.resetConfig()
+      applyAppConfig(config)
+      notice.value = 'Configuration reset to defaults.'
     } catch (err) {
       setError(err)
     }
+  }
+
+  async function saveCurrentWorkspace() {
+    try {
+      const workspace = currentWorkspaceSnapshot()
+      const config = await backend.saveWorkspace(workspace)
+      applyAppConfig(config, false)
+      notice.value = `Workspace saved: ${workspace.workspaceName}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function createWorkspace() {
+    try {
+      const index = workspaces.value.length + 1
+      const workspace = {
+        ...currentWorkspaceSnapshot(),
+        id: `workspace-${Date.now()}`,
+        workspaceName: `Workspace ${index}`
+      }
+      const config = await backend.saveWorkspace(workspace)
+      applyAppConfig(config)
+      notice.value = `Workspace created: ${workspace.workspaceName}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function selectWorkspace(id: string | number | null) {
+    if (typeof id !== 'string' || id === activeWorkspaceID.value) {
+      return
+    }
+    try {
+      if (running.value) {
+        await stop()
+      }
+      const config = await backend.setActiveWorkspace(id)
+      applyAppConfig(config)
+      notice.value = `Workspace selected: ${activeWorkspace.value?.workspaceName ?? id}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function deleteCurrentWorkspace() {
+    if (!activeWorkspaceID.value) {
+      return
+    }
+    try {
+      const config = await backend.deleteWorkspace(activeWorkspaceID.value)
+      applyAppConfig(config)
+      notice.value = 'Workspace deleted.'
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function saveCurrentFilter() {
+    try {
+      const name = presetDraftName.value.trim() || `Preset ${filterPresets.value.length + 1}`
+      const preset: FilterPreset = {
+        id: `preset-${Date.now()}`,
+        name,
+        level: [...levels.value],
+        packageName: selectedPackage.value,
+        keyword: search.value,
+        regexEnabled: regexEnabled.value,
+        tags: parseTags(tagFilter.value),
+        excludeKeyword: excludeKeyword.value
+      }
+      const config = await backend.saveFilterPreset(preset)
+      applyAppConfig(config, false)
+      selectedPresetID.value = preset.id
+      presetDraftName.value = ''
+      notice.value = `Filter preset saved: ${name}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function renamePreset(preset: FilterPreset, name: string) {
+    if (preset.builtIn) {
+      return
+    }
+    try {
+      const config = await backend.saveFilterPreset({ ...preset, name })
+      applyAppConfig(config, false)
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function deletePreset(id: string) {
+    try {
+      const config = await backend.deleteFilterPreset(id)
+      applyAppConfig(config, false)
+      if (selectedPresetID.value === id) {
+        selectedPresetID.value = ''
+      }
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function applyPreset(id: string | number | null) {
+    selectedPresetID.value = typeof id === 'string' ? id : ''
+    const preset = filterPresets.value.find((item) => item.id === selectedPresetID.value)
+    if (!preset) {
+      return
+    }
+    levels.value = preset.level.length ? [...preset.level] : [...ALL_LEVELS]
+    regexEnabled.value = preset.regexEnabled
+    search.value = preset.keyword
+    tagFilter.value = preset.tags.join(', ')
+    excludeKeyword.value = preset.excludeKeyword
+    const presetPackage = preset.packageName === '$current'
+      ? projectConfig.value.packageName || selectedPackage.value
+      : preset.packageName
+    if (presetPackage !== selectedPackage.value) {
+      await selectPackage(presetPackage || null)
+    }
+    notice.value = `Filter preset applied: ${preset.name}`
   }
 
   async function chooseProjectDirectory() {
@@ -496,6 +698,9 @@ export const useLogStore = defineStore('logs', () => {
       if (result.success) {
         projectConfig.value.packageName = result.packageName
         await saveProjectConfig()
+        if (autoClearOnLaunch.value) {
+          await clear()
+        }
         await selectPackage(result.packageName)
         await fetchPackagePIDState()
         notice.value = running.value
@@ -537,6 +742,9 @@ export const useLogStore = defineStore('logs', () => {
       if (result.launch?.success) {
         projectConfig.value.packageName = result.launch.packageName
         await saveProjectConfig()
+        if (autoClearOnLaunch.value) {
+          await clear()
+        }
         await selectPackage(result.launch.packageName)
         await fetchPackagePIDState()
         notice.value = running.value
@@ -690,6 +898,100 @@ export const useLogStore = defineStore('logs', () => {
     }
   }
 
+  function applyAppConfig(config: AppConfig, applyWorkspace = true) {
+    appConfig.value = {
+      ...defaultAppConfig(),
+      ...config
+    }
+    workspaces.value = appConfig.value.workspaces ?? []
+    filterPresets.value = appConfig.value.filterPresets ?? []
+    activeWorkspaceID.value = appConfig.value.activeWorkspaceId
+    if (applyWorkspace) {
+      const workspace = activeWorkspace.value ?? workspaces.value[0] ?? defaultWorkspaceConfig()
+      applyWorkspaceConfig(workspace)
+    }
+  }
+
+  function applyWorkspaceConfig(workspace: WorkspaceConfig) {
+    projectConfig.value = {
+      projectPath: workspace.projectPath,
+      packageName: workspace.packageName,
+      lastApkPath: workspace.lastApkPath,
+      defaultBuildTask: workspace.defaultBuildTask || 'assembleDebug',
+      installOptions: {
+        ...defaultProjectConfig().installOptions,
+        ...(workspace.installOptions ?? {})
+      }
+    }
+    workspaceName.value = workspace.workspaceName || 'Default Workspace'
+    autoStartLogcat.value = workspace.autoStartLogcat
+    autoClearOnLaunch.value = workspace.autoClearOnLaunch
+    selectedSerial.value = workspace.selectedDeviceSerial || ''
+    void backend.setActiveDevice(selectedSerial.value)
+    levels.value = workspace.selectedLogLevel?.length ? [...workspace.selectedLogLevel] : [...ALL_LEVELS]
+    search.value = workspace.searchKeyword || ''
+    packageMode.value = workspace.selectedPackageMode === 'all' ? 'all' : 'thirdParty'
+    selectedPackage.value = workspace.packageName || ''
+    packagePIDState.value = { packageName: selectedPackage.value }
+    aiContextOptions.value = {
+      ...defaultAIContextOptions(),
+      ...(workspace.aiContextOptions ?? {})
+    }
+    latestAPK.value = workspace.lastApkPath
+      ? {
+          apkPath: workspace.lastApkPath,
+          fileName: workspace.lastApkPath.split(/[\\/]/).pop() || workspace.lastApkPath,
+          modifiedTime: '',
+          size: 0
+        }
+      : null
+  }
+
+  function currentWorkspaceSnapshot(): WorkspaceConfig {
+    const base = activeWorkspace.value ?? defaultWorkspaceConfig()
+    return {
+      ...base,
+      workspaceName: workspaceName.value || base.workspaceName || 'Default Workspace',
+      projectPath: projectConfig.value.projectPath,
+      packageName: projectConfig.value.packageName || selectedPackage.value,
+      lastApkPath: projectConfig.value.lastApkPath,
+      defaultBuildTask: projectConfig.value.defaultBuildTask || 'assembleDebug',
+      installOptions: projectConfig.value.installOptions,
+      selectedDeviceSerial: selectedSerial.value,
+      selectedLogLevel: [...levels.value],
+      searchKeyword: search.value,
+      selectedPackageMode: packageMode.value,
+      maxLogLines: UI_LOG_LIMIT,
+      autoStartLogcat: autoStartLogcat.value,
+      autoClearOnLaunch: autoClearOnLaunch.value,
+      aiContextOptions: aiContextOptions.value
+    }
+  }
+
+  function entryHaystack(entry: LogEntry) {
+    return [
+      entry.tag,
+      entry.message,
+      entry.raw,
+      ...(entry.multiline ?? [])
+    ].join('\n')
+  }
+
+  function parseTags(value: string) {
+    return value
+      .split(/[,\s]+/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  }
+
+  function safeRegex(pattern: string) {
+    try {
+      return new RegExp(pattern, 'i')
+    } catch {
+      return null
+    }
+  }
+
   function setError(err: unknown) {
     error.value = err instanceof Error ? err.message : String(err)
   }
@@ -717,6 +1019,23 @@ export const useLogStore = defineStore('logs', () => {
     error,
     notice,
     status,
+    appConfig,
+    workspaces,
+    activeWorkspaceID,
+    activeWorkspace,
+    workspaceOptions,
+    filterPresets,
+    presetOptions,
+    selectedPresetID,
+    presetDraftName,
+    presetManagerOpen,
+    workspaceName,
+    autoStartLogcat,
+    autoClearOnLaunch,
+    regexEnabled,
+    tagFilter,
+    excludeKeyword,
+    aiContextOptions,
     projectConfig,
     latestAPK,
     buildResult,
@@ -751,8 +1070,17 @@ export const useLogStore = defineStore('logs', () => {
     exportFiltered,
     copyAIContext,
     exportAIContext,
-    loadProjectConfig,
+    loadConfig,
+    resetConfig,
     saveProjectConfig,
+    saveCurrentWorkspace,
+    createWorkspace,
+    selectWorkspace,
+    deleteCurrentWorkspace,
+    saveCurrentFilter,
+    renamePreset,
+    deletePreset,
+    applyPreset,
     chooseProjectDirectory,
     findLatestAPK,
     buildDebug,

@@ -99,6 +99,42 @@ export interface AIContextOptions {
   searchKeyword?: string
 }
 
+export interface WorkspaceConfig {
+  id: string
+  workspaceName: string
+  projectPath: string
+  packageName: string
+  lastApkPath: string
+  defaultBuildTask: string
+  installOptions: InstallOptions
+  selectedDeviceSerial: string
+  selectedLogLevel: string[]
+  searchKeyword: string
+  selectedPackageMode: 'thirdParty' | 'all'
+  maxLogLines: number
+  autoStartLogcat: boolean
+  autoClearOnLaunch: boolean
+  aiContextOptions: AIContextOptions
+}
+
+export interface FilterPreset {
+  id: string
+  name: string
+  level: string[]
+  packageName: string
+  keyword: string
+  regexEnabled: boolean
+  tags: string[]
+  excludeKeyword: string
+  builtIn?: boolean
+}
+
+export interface AppConfig {
+  activeWorkspaceId: string
+  workspaces: WorkspaceConfig[]
+  filterPresets: FilterPreset[]
+}
+
 export interface APKInfo {
   apkPath: string
   fileName: string

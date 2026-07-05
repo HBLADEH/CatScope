@@ -61,8 +61,16 @@ function handlePackageModeChange(value: string | number | null) {
   void store.setPackageMode(value === 'all' ? 'all' : 'thirdParty')
 }
 
+function handleWorkspaceChange(value: string | number | null) {
+  void store.selectWorkspace(value)
+}
+
+function handlePresetChange(value: string | number | null) {
+  void store.applyPreset(value)
+}
+
 onMounted(() => {
-  void store.loadProjectConfig()
+  void store.loadConfig()
   void store.refreshDevices()
 })
 
@@ -176,6 +184,33 @@ onUnmounted(() => {
           <section class="workspace">
             <aside class="device-panel">
               <section class="project-panel">
+                <h2>Workspace</h2>
+                <n-select
+                  :value="store.activeWorkspaceID"
+                  :options="store.workspaceOptions"
+                  placeholder="Workspace"
+                  @update:value="handleWorkspaceChange"
+                />
+                <n-input
+                  v-model:value="store.workspaceName"
+                  placeholder="Workspace name"
+                  @blur="store.saveCurrentWorkspace"
+                />
+                <div class="project-actions">
+                  <n-button size="small" type="primary" tertiary @click="store.saveCurrentWorkspace">
+                    Save Workspace
+                  </n-button>
+                  <n-button size="small" tertiary @click="store.createWorkspace">
+                    New
+                  </n-button>
+                  <n-button size="small" tertiary :disabled="store.workspaces.length <= 1" @click="store.deleteCurrentWorkspace">
+                    Delete
+                  </n-button>
+                  <n-button size="small" tertiary @click="store.resetConfig">
+                    Reset Config
+                  </n-button>
+                </div>
+
                 <h2>Project</h2>
                 <div class="project-path-row">
                   <n-input
@@ -211,6 +246,14 @@ onUnmounted(() => {
                   </n-checkbox>
                   <n-checkbox v-model:checked="store.projectConfig.installOptions.allowTestOnly" @update:checked="store.saveProjectConfig">
                     -t
+                  </n-checkbox>
+                </div>
+                <div class="install-options">
+                  <n-checkbox v-model:checked="store.autoStartLogcat" @update:checked="store.saveCurrentWorkspace">
+                    Auto Logcat
+                  </n-checkbox>
+                  <n-checkbox v-model:checked="store.autoClearOnLaunch" @update:checked="store.saveCurrentWorkspace">
+                    Clear on Launch
                   </n-checkbox>
                 </div>
 
@@ -257,6 +300,45 @@ onUnmounted(() => {
                   <pre v-if="store.buildOutput">{{ store.buildOutput }}</pre>
                   <pre v-if="store.installOutput">{{ store.installOutput }}</pre>
                 </details>
+              </section>
+
+              <section class="filter-panel">
+                <h2>Filter Preset</h2>
+                <n-select
+                  :value="store.selectedPresetID || null"
+                  :options="store.presetOptions"
+                  clearable
+                  placeholder="Apply preset"
+                  @update:value="handlePresetChange"
+                />
+                <n-input
+                  v-model:value="store.presetDraftName"
+                  class="project-input"
+                  placeholder="Preset name"
+                />
+                <div class="project-actions">
+                  <n-button size="small" type="primary" tertiary @click="store.saveCurrentFilter">
+                    Save Current Filter
+                  </n-button>
+                  <n-button size="small" tertiary @click="store.presetManagerOpen = true">
+                    Manage Presets
+                  </n-button>
+                </div>
+                <n-input
+                  v-model:value="store.tagFilter"
+                  class="project-input"
+                  placeholder="Tags, comma separated"
+                  @blur="store.saveCurrentWorkspace"
+                />
+                <n-input
+                  v-model:value="store.excludeKeyword"
+                  class="project-input"
+                  placeholder="Exclude keyword"
+                  @blur="store.saveCurrentWorkspace"
+                />
+                <n-checkbox v-model:checked="store.regexEnabled" @update:checked="store.saveCurrentWorkspace">
+                  Regex search
+                </n-checkbox>
               </section>
 
               <h2>Device</h2>
@@ -306,6 +388,27 @@ onUnmounted(() => {
             <span v-if="store.error" class="status-error">{{ store.error }}</span>
             <span v-else-if="store.notice" class="status-notice">{{ store.notice }}</span>
           </footer>
+
+          <n-drawer v-model:show="store.presetManagerOpen" :width="360" placement="right">
+            <n-drawer-content title="Filter Presets">
+              <div class="preset-manager">
+                <div v-for="preset in store.filterPresets" :key="preset.id" class="preset-row">
+                  <n-input
+                    v-model:value="preset.name"
+                    size="small"
+                    :disabled="preset.builtIn"
+                    @blur="store.renamePreset(preset, preset.name)"
+                  />
+                  <n-button size="small" tertiary @click="store.applyPreset(preset.id)">
+                    Apply
+                  </n-button>
+                  <n-button size="small" tertiary :disabled="preset.builtIn" @click="store.deletePreset(preset.id)">
+                    Delete
+                  </n-button>
+                </div>
+              </div>
+            </n-drawer-content>
+          </n-drawer>
         </main>
       </n-message-provider>
     </n-dialog-provider>

@@ -110,7 +110,8 @@ input {
   text-transform: uppercase;
 }
 
-.project-panel {
+.project-panel,
+.filter-panel {
   display: grid;
   gap: 8px;
   margin-bottom: 18px;
@@ -165,6 +166,18 @@ input {
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.preset-manager {
+  display: grid;
+  gap: 10px;
+}
+
+.preset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
 }
 
 dl {

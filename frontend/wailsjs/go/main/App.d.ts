@@ -17,6 +17,10 @@ export function ClearLogs():Promise<void>;
 
 export function CopyAIContext(arg1:string,arg2:ai.AIContextOptions):Promise<void>;
 
+export function DeleteFilterPreset(arg1:string):Promise<workspace.AppConfig>;
+
+export function DeleteWorkspace(arg1:string):Promise<workspace.AppConfig>;
+
 export function ExportAIContext(arg1:string,arg2:ai.AIContextOptions):Promise<string>;
 
 export function ExportLogs(arg1:Array<logcat.LogEntry>):Promise<string>;
@@ -43,13 +47,29 @@ export function LaunchApp(arg1:string):Promise<adb.LaunchResult>;
 
 export function ListDevices():Promise<Array<adb.AndroidDevice>>;
 
+export function ListFilterPresets():Promise<Array<workspace.FilterPreset>>;
+
 export function ListPackages(arg1:string,arg2:string):Promise<Array<adb.InstalledPackage>>;
 
+export function ListWorkspaces():Promise<Array<workspace.WorkspaceConfig>>;
+
+export function LoadConfig():Promise<workspace.AppConfig>;
+
+export function ResetConfig():Promise<workspace.AppConfig>;
+
+export function SaveConfig(arg1:workspace.AppConfig):Promise<void>;
+
+export function SaveFilterPreset(arg1:workspace.FilterPreset):Promise<workspace.AppConfig>;
+
 export function SaveProjectConfig(arg1:workspace.ProjectConfig):Promise<void>;
+
+export function SaveWorkspace(arg1:workspace.WorkspaceConfig):Promise<workspace.AppConfig>;
 
 export function SelectProjectDirectory():Promise<string>;
 
 export function SetActiveDevice(arg1:string):Promise<void>;
+
+export function SetActiveWorkspace(arg1:string):Promise<workspace.AppConfig>;
 
 export function SetTrackedPackage(arg1:string,arg2:string):Promise<void>;
 

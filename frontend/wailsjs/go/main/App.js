@@ -22,6 +22,14 @@ export function CopyAIContext(arg1, arg2) {
   return window['go']['main']['App']['CopyAIContext'](arg1, arg2);
 }
 
+export function DeleteFilterPreset(arg1) {
+  return window['go']['main']['App']['DeleteFilterPreset'](arg1);
+}
+
+export function DeleteWorkspace(arg1) {
+  return window['go']['main']['App']['DeleteWorkspace'](arg1);
+}
+
 export function ExportAIContext(arg1, arg2) {
   return window['go']['main']['App']['ExportAIContext'](arg1, arg2);
 }
@@ -74,12 +82,40 @@ export function ListDevices() {
   return window['go']['main']['App']['ListDevices']();
 }
 
+export function ListFilterPresets() {
+  return window['go']['main']['App']['ListFilterPresets']();
+}
+
 export function ListPackages(arg1, arg2) {
   return window['go']['main']['App']['ListPackages'](arg1, arg2);
 }
 
+export function ListWorkspaces() {
+  return window['go']['main']['App']['ListWorkspaces']();
+}
+
+export function LoadConfig() {
+  return window['go']['main']['App']['LoadConfig']();
+}
+
+export function ResetConfig() {
+  return window['go']['main']['App']['ResetConfig']();
+}
+
+export function SaveConfig(arg1) {
+  return window['go']['main']['App']['SaveConfig'](arg1);
+}
+
+export function SaveFilterPreset(arg1) {
+  return window['go']['main']['App']['SaveFilterPreset'](arg1);
+}
+
 export function SaveProjectConfig(arg1) {
   return window['go']['main']['App']['SaveProjectConfig'](arg1);
+}
+
+export function SaveWorkspace(arg1) {
+  return window['go']['main']['App']['SaveWorkspace'](arg1);
 }
 
 export function SelectProjectDirectory() {
@@ -88,6 +124,10 @@ export function SelectProjectDirectory() {
 
 export function SetActiveDevice(arg1) {
   return window['go']['main']['App']['SetActiveDevice'](arg1);
+}
+
+export function SetActiveWorkspace(arg1) {
+  return window['go']['main']['App']['SetActiveWorkspace'](arg1);
 }
 
 export function SetTrackedPackage(arg1, arg2) {
