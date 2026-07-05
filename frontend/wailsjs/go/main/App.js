@@ -54,6 +54,10 @@ export function GenerateAIContext(arg1, arg2) {
   return window['go']['main']['App']['GenerateAIContext'](arg1, arg2);
 }
 
+export function GetCurrentSessionSummary() {
+  return window['go']['main']['App']['GetCurrentSessionSummary']();
+}
+
 export function GetDeviceInfo(arg1) {
   return window['go']['main']['App']['GetDeviceInfo'](arg1);
 }
@@ -110,6 +114,10 @@ export function OpenLogFile(arg1) {
   return window['go']['main']['App']['OpenLogFile'](arg1);
 }
 
+export function OpenSession(arg1) {
+  return window['go']['main']['App']['OpenSession'](arg1);
+}
+
 export function ResetConfig() {
   return window['go']['main']['App']['ResetConfig']();
 }
@@ -128,6 +136,10 @@ export function SaveFilterPreset(arg1) {
 
 export function SaveProjectConfig(arg1) {
   return window['go']['main']['App']['SaveProjectConfig'](arg1);
+}
+
+export function SaveSession(arg1, arg2) {
+  return window['go']['main']['App']['SaveSession'](arg1, arg2);
 }
 
 export function SaveWorkspace(arg1) {

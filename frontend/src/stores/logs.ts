@@ -16,6 +16,8 @@ import type {
   LogStatus,
   PackagePIDState,
   ProjectConfig,
+  SessionFilters,
+  SessionSummary,
   LaunchResult,
   WorkspaceConfig
 } from '@/types/backend'
@@ -134,13 +136,20 @@ export const useLogStore = defineStore('logs', () => {
   const autoClearOnLaunch = ref(false)
   const offlinePathInput = ref('')
   const offlineLoading = ref(false)
+  const sessionPathInput = ref('')
+  const sessionNameInput = ref('')
+  const sessionNotes = ref('')
+  const sessionLoading = ref(false)
+  const currentSession = ref<SessionSummary | null>(null)
 
   const running = computed(() => status.value.running)
   const logSource = computed(() => status.value.source ?? 'live')
   const isOffline = computed(() => logSource.value === 'offline')
+  const isSession = computed(() => logSource.value === 'session')
+  const isStaticSource = computed(() => isOffline.value || isSession.value)
   const selectedDevice = computed(() => devices.value.find((device) => device.serial === selectedSerial.value))
   const selectedDeviceState = computed(() => selectedDevice.value?.state ?? 'unknown')
-  const canStart = computed(() => !isOffline.value && Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
+  const canStart = computed(() => !isStaticSource.value && Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
   const canSelectPackage = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
   const canUseDeviceActions = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
   const canBuildProject = computed(() => Boolean(projectConfig.value.projectPath.trim()))
@@ -192,10 +201,13 @@ export const useLogStore = defineStore('logs', () => {
     return ''
   })
   const tableEmptyMessage = computed(() => {
+    if (isSession.value && logs.value.length === 0) {
+      return 'Session is open but contains no log entries.'
+    }
     if (isOffline.value && logs.value.length === 0) {
       return 'Offline log file is loaded but contains no parsed entries.'
     }
-    if (!isOffline.value && devices.value.length === 0) {
+    if (!isStaticSource.value && devices.value.length === 0) {
       return 'No device connected. Open an offline log file or refresh devices.'
     }
     if (!running.value && logs.value.length === 0) {
@@ -314,6 +326,7 @@ export const useLogStore = defineStore('logs', () => {
       analysisResults.value = []
       selectedAnalysis.value = null
       analysisIDs.clear()
+      currentSession.value = null
       paused.value = false
       await backend.startLogcat(selectedSerial.value)
       if (selectedPackage.value) {
@@ -356,6 +369,7 @@ export const useLogStore = defineStore('logs', () => {
       selectedAnalysis.value = null
       analysisIDs.clear()
       mergeAnalysisResults(result.analysisResults ?? [])
+      currentSession.value = null
       paused.value = false
       offlinePathInput.value = result.filePath
       await fetchStatus()
@@ -380,6 +394,7 @@ export const useLogStore = defineStore('logs', () => {
       analysisResults.value = []
       selectedAnalysis.value = null
       analysisIDs.clear()
+      currentSession.value = null
       paused.value = false
       await fetchStatus()
       notice.value = 'Returned to live device logcat mode.'
@@ -458,6 +473,13 @@ export const useLogStore = defineStore('logs', () => {
     analysisResults.value = []
     selectedAnalysis.value = null
     analysisIDs.clear()
+    if (currentSession.value) {
+      currentSession.value = {
+        ...currentSession.value,
+        logCount: 0,
+        analysisCount: 0
+      }
+    }
     await fetchStatus()
   }
 
@@ -485,6 +507,86 @@ export const useLogStore = defineStore('logs', () => {
       notice.value = `Exported ${filteredLogs.value.length} log entries as JSONL to ${path}`
     } catch (err) {
       setError(err)
+    }
+  }
+
+  function currentSessionFilters(): SessionFilters {
+    return {
+      level: [...levels.value],
+      packageName: selectedPackage.value,
+      keyword: search.value,
+      regexEnabled: regexEnabled.value,
+      tags: parseTags(tagFilter.value),
+      excludeKeyword: excludeKeyword.value
+    }
+  }
+
+  async function saveSession(path = sessionPathInput.value) {
+    sessionLoading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      if (logs.value.length === 0) {
+        throw new Error('No logs to save.')
+      }
+      const summary = await backend.saveSession(path.trim(), {
+        name: sessionNameInput.value.trim() || currentSession.value?.name || workspaceName.value,
+        filters: currentSessionFilters(),
+        aiContextOptions: contextOptionsForRequest(),
+        notes: sessionNotes.value
+      })
+      currentSession.value = summary
+      sessionPathInput.value = summary.filePath
+      sessionNameInput.value = summary.name
+      notice.value = `Saved session: ${summary.logCount} logs, ${summary.analysisCount} issue(s).`
+    } catch (err) {
+      setError(err)
+    } finally {
+      sessionLoading.value = false
+    }
+  }
+
+  async function openSession(path = sessionPathInput.value) {
+    sessionLoading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      stopPolling()
+      const result = await backend.openSession(path.trim())
+      logs.value = result.entries ?? []
+      selectedLog.value = null
+      analysisResults.value = []
+      selectedAnalysis.value = null
+      analysisIDs.clear()
+      mergeAnalysisResults(result.analysisResults ?? result.session.analysisResults ?? [])
+      applySessionFilters(result.session.filters)
+      aiContextOptions.value = {
+        ...defaultAIContextOptions(),
+        ...(result.session.aiContextOptions ?? {})
+      }
+      projectConfig.value = {
+        ...projectConfig.value,
+        projectPath: result.session.projectPath || projectConfig.value.projectPath,
+        packageName: result.session.packageName || projectConfig.value.packageName
+      }
+      selectedSerial.value = result.session.selectedDevice || ''
+      selectedPackage.value = result.session.filters?.packageName || result.session.packageName || ''
+      packagePIDState.value = {
+        packageName: selectedPackage.value,
+        knownPids: result.session.knownPids ?? []
+      }
+      currentSession.value = result.summary
+      sessionPathInput.value = result.summary.filePath
+      sessionNameInput.value = result.summary.name
+      sessionNotes.value = result.session.notes || ''
+      paused.value = false
+      await fetchStatus()
+      notice.value = `Opened session ${result.summary.name}: ${result.summary.logCount} logs, ${result.summary.analysisCount} issue(s).`
+    } catch (err) {
+      setError(err)
+      await fetchStatus()
+    } finally {
+      sessionLoading.value = false
     }
   }
 
@@ -660,6 +762,18 @@ export const useLogStore = defineStore('logs', () => {
     notice.value = `Filter preset applied: ${preset.name}`
   }
 
+  function applySessionFilters(filters?: SessionFilters) {
+    if (!filters) {
+      return
+    }
+    levels.value = filters.level?.length ? [...filters.level] : [...ALL_LEVELS]
+    selectedPackage.value = filters.packageName || ''
+    search.value = filters.keyword || ''
+    regexEnabled.value = filters.regexEnabled
+    tagFilter.value = (filters.tags ?? []).join(', ')
+    excludeKeyword.value = filters.excludeKeyword || ''
+  }
+
   async function chooseProjectDirectory() {
     try {
       const path = await backend.selectProjectDirectory()
@@ -764,7 +878,7 @@ export const useLogStore = defineStore('logs', () => {
       if (result.success) {
         projectConfig.value.packageName = result.packageName
         await saveProjectConfig()
-        if (autoClearOnLaunch.value && !isOffline.value) {
+        if (autoClearOnLaunch.value && !isStaticSource.value) {
           await clear()
         }
         await selectPackage(result.packageName)
@@ -808,7 +922,7 @@ export const useLogStore = defineStore('logs', () => {
       if (result.launch?.success) {
         projectConfig.value.packageName = result.launch.packageName
         await saveProjectConfig()
-        if (autoClearOnLaunch.value && !isOffline.value) {
+        if (autoClearOnLaunch.value && !isStaticSource.value) {
           await clear()
         }
         await selectPackage(result.launch.packageName)
@@ -1100,6 +1214,11 @@ export const useLogStore = defineStore('logs', () => {
     autoClearOnLaunch,
     offlinePathInput,
     offlineLoading,
+    sessionPathInput,
+    sessionNameInput,
+    sessionNotes,
+    sessionLoading,
+    currentSession,
     regexEnabled,
     tagFilter,
     excludeKeyword,
@@ -1117,6 +1236,8 @@ export const useLogStore = defineStore('logs', () => {
     running,
     logSource,
     isOffline,
+    isSession,
+    isStaticSource,
     selectedDeviceState,
     canStart,
     canSelectPackage,
@@ -1139,6 +1260,8 @@ export const useLogStore = defineStore('logs', () => {
     clearSearch,
     exportFiltered,
     exportFilteredJSONL,
+    saveSession,
+    openSession,
     openLogFile,
     returnToLiveMode,
     copyAIContext,

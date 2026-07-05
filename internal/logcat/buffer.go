@@ -111,6 +111,37 @@ func (b *RingBuffer) Clear() {
 	b.nextID = 1
 }
 
+func (b *RingBuffer) Replace(entries []LogEntry) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.entries = nil
+	b.discarded = 0
+	b.nextID = 1
+
+	if len(entries) == 0 {
+		return
+	}
+	if len(entries) > b.max {
+		overflow := len(entries) - b.max
+		entries = entries[overflow:]
+		b.discarded = int64(overflow)
+	}
+
+	b.entries = make([]LogEntry, len(entries))
+	var maxID int64
+	for index, entry := range entries {
+		if entry.ID <= 0 {
+			entry.ID = int64(index + 1)
+		}
+		if entry.ID > maxID {
+			maxID = entry.ID
+		}
+		b.entries[index] = entry
+	}
+	b.nextID = maxID + 1
+}
+
 func (b *RingBuffer) Stats() (count int, discarded int64, lastID int64) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()

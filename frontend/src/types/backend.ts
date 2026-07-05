@@ -42,10 +42,12 @@ export interface LogStatus {
   discardedCount: number
   lastID: number
   adbPath?: string
-  source?: 'live' | 'offline'
+  source?: 'live' | 'offline' | 'session'
   offlineFilePath?: string
   offlineFileName?: string
   offlineParseFailedCount?: number
+  sessionFilePath?: string
+  sessionName?: string
 }
 
 export interface OfflineLogFileResult {
@@ -203,4 +205,63 @@ export interface BuildInstallLaunchResult {
   packageName: string
   apk?: APKInfo
   analysisResults?: AnalysisResult[]
+}
+
+export interface SessionFilters {
+  level: string[]
+  packageName: string
+  keyword: string
+  regexEnabled: boolean
+  tags: string[]
+  excludeKeyword: string
+}
+
+export interface SessionSaveOptions {
+  name: string
+  filters: SessionFilters
+  aiContextOptions: AIContextOptions
+  notes: string
+}
+
+export interface CatScopeSession {
+  version: number
+  sessionId: string
+  name: string
+  createdAt: string
+  updatedAt: string
+  sourceMode: 'live' | 'offline' | 'session'
+  sourceName: string
+  sourcePath: string
+  workspaceId: string
+  workspaceName: string
+  projectPath: string
+  packageName: string
+  selectedDevice: string
+  knownPids: number[]
+  filters: SessionFilters
+  aiContextOptions: AIContextOptions
+  logEntries: LogEntry[]
+  analysisResults: AnalysisResult[]
+  notes: string
+}
+
+export interface SessionSummary {
+  sessionId: string
+  name: string
+  filePath: string
+  createdAt: string
+  updatedAt: string
+  sourceMode: 'live' | 'offline' | 'session'
+  sourceName: string
+  workspaceName: string
+  packageName: string
+  logCount: number
+  analysisCount: number
+}
+
+export interface SessionOpenResult {
+  session: CatScopeSession
+  summary: SessionSummary
+  entries: LogEntry[]
+  analysisResults: AnalysisResult[]
 }

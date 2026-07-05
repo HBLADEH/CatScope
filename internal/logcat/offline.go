@@ -12,6 +12,7 @@ import (
 const (
 	LogSourceLive    = "live"
 	LogSourceOffline = "offline"
+	LogSourceSession = "session"
 )
 
 type OfflineLogFileResult struct {

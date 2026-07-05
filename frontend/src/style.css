@@ -7,14 +7,20 @@
   text-rendering: optimizeLegibility;
 }
 
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  min-width: 960px;
-  min-height: 100vh;
   background: #151716;
 }
 
@@ -26,14 +32,18 @@ input {
 .app-shell {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  height: 100vh;
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   color: #e7e9e6;
   background: #151716;
 }
 
 .toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(190px, 250px) 110px minmax(200px, 280px) auto auto auto auto auto auto auto auto minmax(150px, 1fr) minmax(140px, 190px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -75,13 +85,39 @@ input {
 .level-select,
 .package-mode-select,
 .package-select {
-  width: 100%;
+  min-width: 0;
+}
+
+.device-select {
+  flex: 1 1 200px;
+  max-width: 250px;
+}
+
+.package-mode-select {
+  flex: 0 1 110px;
+}
+
+.package-select {
+  flex: 1 1 210px;
+  max-width: 280px;
+}
+
+.level-select {
+  flex: 1 1 150px;
+  max-width: 190px;
+}
+
+.toolbar > .n-input {
+  flex: 1 1 170px;
+  min-width: 140px;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  grid-template-columns: clamp(240px, 24vw, 300px) minmax(0, 1fr) clamp(260px, 26vw, 320px);
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .device-panel,
@@ -458,12 +494,22 @@ dd {
   display: flex;
   gap: 18px;
   align-items: center;
+  min-width: 0;
   min-height: 32px;
   padding: 6px 12px;
+  overflow: hidden;
   border-top: 1px solid #2b302c;
   background: #1d201e;
   color: #aeb7b0;
   font-size: 12px;
+}
+
+.statusbar span {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-error {

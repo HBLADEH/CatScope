@@ -16,6 +16,9 @@ import type {
   OfflineLogFileResult,
   PackagePIDState,
   ProjectConfig,
+  SessionOpenResult,
+  SessionSaveOptions,
+  SessionSummary,
   WorkspaceConfig,
   LogStatus
 } from '@/types/backend'
@@ -63,6 +66,9 @@ export const backend = {
   stopLogcat: () => call<void>('StopLogcat'),
   exportLogs: (entries: unknown[]) => call<string>('ExportLogs', entries),
   exportLogsJSONL: (entries: unknown[]) => call<string>('ExportLogsJSONL', entries),
+  saveSession: (path: string, options: SessionSaveOptions) => call<SessionSummary>('SaveSession', path, options),
+  openSession: (path = '') => call<SessionOpenResult>('OpenSession', path),
+  getCurrentSessionSummary: () => call<SessionSummary>('GetCurrentSessionSummary'),
   openLogFile: (path = '') => call<OfflineLogFileResult>('OpenLogFile', path),
   loadOfflineLogFile: (path: string) => call<OfflineLogFileResult>('LoadOfflineLogFile', path),
   returnToLiveMode: () => call<void>('ReturnToLiveMode'),

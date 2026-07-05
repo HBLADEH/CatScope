@@ -32,4 +32,6 @@ type LogStatus struct {
 	OfflineFilePath         string `json:"offlineFilePath,omitempty"`
 	OfflineFileName         string `json:"offlineFileName,omitempty"`
 	OfflineParseFailedCount int    `json:"offlineParseFailedCount,omitempty"`
+	SessionFilePath         string `json:"sessionFilePath,omitempty"`
+	SessionName             string `json:"sessionName,omitempty"`
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"catscope/internal/ai"
 	"catscope/internal/build"
 	"catscope/internal/logcat"
+	"catscope/internal/storage"
 	"catscope/internal/workspace"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -37,6 +39,9 @@ type App struct {
 	offlineFilePath    string
 	offlineFileName    string
 	offlineParseFailed int
+	sessionFilePath    string
+	sessionName        string
+	currentSession     storage.SessionSummary
 
 	analysisMu sync.RWMutex
 	analysis   map[string]logcat.AnalysisResult
@@ -49,6 +54,20 @@ type BuildInstallLaunchResult struct {
 	PackageName     string                  `json:"packageName"`
 	APK             *build.APKInfo          `json:"apk,omitempty"`
 	AnalysisResults []logcat.AnalysisResult `json:"analysisResults,omitempty"`
+}
+
+type SessionSaveOptions struct {
+	Name             string                 `json:"name"`
+	Filters          storage.SessionFilters `json:"filters"`
+	AIContextOptions ai.AIContextOptions    `json:"aiContextOptions"`
+	Notes            string                 `json:"notes"`
+}
+
+type SessionOpenResult struct {
+	Session         storage.Session         `json:"session"`
+	Summary         storage.SessionSummary  `json:"summary"`
+	Entries         []logcat.LogEntry       `json:"entries"`
+	AnalysisResults []logcat.AnalysisResult `json:"analysisResults"`
 }
 
 func NewApp() *App {
@@ -208,6 +227,9 @@ func (a *App) StartLogcat(serial string) error {
 	a.offlineFilePath = ""
 	a.offlineFileName = ""
 	a.offlineParseFailed = 0
+	a.sessionFilePath = ""
+	a.sessionName = ""
+	a.currentSession = storage.SessionSummary{}
 	a.mu.Unlock()
 
 	proc, err := adb.StartLogcat(a.context(), adbPath, serial, a.ingestLogLine, a.setLastError, func(err error) {
@@ -323,6 +345,112 @@ func (a *App) ExportLogsJSONL(entries []logcat.LogEntry) (string, error) {
 	return path, nil
 }
 
+func (a *App) SaveSession(path string, options SessionSaveOptions) (storage.SessionSummary, error) {
+	entries := a.logStore.Snapshot()
+	if len(entries) == 0 {
+		return storage.SessionSummary{}, errors.New("no logs to save")
+	}
+
+	path = strings.TrimSpace(path)
+	if path == "" {
+		selected, err := wailsruntime.SaveFileDialog(a.context(), wailsruntime.SaveDialogOptions{
+			DefaultFilename: "catscope-session.catscope-session",
+			Filters: []wailsruntime.FileFilter{
+				{DisplayName: "CatScope Session (*.catscope-session)", Pattern: "*.catscope-session"},
+			},
+		})
+		if err != nil {
+			a.setLastError(err.Error())
+			return storage.SessionSummary{}, err
+		}
+		path = strings.TrimSpace(selected)
+	}
+	if path == "" {
+		return storage.SessionSummary{}, errors.New("save session canceled")
+	}
+
+	session, err := a.buildSessionSnapshot(options, entries)
+	if err != nil {
+		a.setLastError(err.Error())
+		return storage.SessionSummary{}, err
+	}
+	saved, err := storage.SaveSession(path, session)
+	if err != nil {
+		a.setLastError(err.Error())
+		return storage.SessionSummary{}, err
+	}
+
+	summary := storage.Summary(saved, ensureSessionExtension(path))
+	a.mu.Lock()
+	a.currentSession = summary
+	a.sessionFilePath = summary.FilePath
+	a.sessionName = summary.Name
+	a.mu.Unlock()
+	a.setLastError("")
+	return summary, nil
+}
+
+func (a *App) OpenSession(path string) (SessionOpenResult, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		selected, err := wailsruntime.OpenFileDialog(a.context(), wailsruntime.OpenDialogOptions{
+			Title: "Open CatScope Session",
+			Filters: []wailsruntime.FileFilter{
+				{DisplayName: "CatScope Session (*.catscope-session)", Pattern: "*.catscope-session"},
+			},
+		})
+		if err != nil {
+			a.setLastError(err.Error())
+			return SessionOpenResult{}, err
+		}
+		path = strings.TrimSpace(selected)
+	}
+	if path == "" {
+		return SessionOpenResult{}, errors.New("open session canceled")
+	}
+
+	session, err := storage.OpenSession(path)
+	if err != nil {
+		a.setLastError(err.Error())
+		return SessionOpenResult{}, err
+	}
+
+	_ = a.StopLogcat()
+	a.parser.Reset()
+	a.logStore.Replace(session.LogEntries)
+	a.clearAnalysisResults()
+	a.storeAnalysisResults(session.AnalysisResults)
+	a.pidMap.Restore(session.PackageName, session.KnownPIDs)
+
+	entries := a.logStore.Snapshot()
+	summary := storage.Summary(session, path)
+
+	a.mu.Lock()
+	a.logSource = logcat.LogSourceSession
+	a.offlineFilePath = ""
+	a.offlineFileName = ""
+	a.offlineParseFailed = 0
+	a.serial = session.SelectedDevice
+	a.sessionFilePath = path
+	a.sessionName = session.Name
+	a.currentSession = summary
+	a.lastErr = ""
+	a.mu.Unlock()
+
+	return SessionOpenResult{
+		Session:         session,
+		Summary:         summary,
+		Entries:         entries,
+		AnalysisResults: session.AnalysisResults,
+	}, nil
+}
+
+func (a *App) GetCurrentSessionSummary() storage.SessionSummary {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.currentSession
+}
+
 func (a *App) OpenLogFile(path string) (logcat.OfflineLogFileResult, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -373,6 +501,9 @@ func (a *App) LoadOfflineLogFile(path string) (logcat.OfflineLogFileResult, erro
 	a.offlineFilePath = result.FilePath
 	a.offlineFileName = result.FileName
 	a.offlineParseFailed = result.ParseFailedCount
+	a.sessionFilePath = ""
+	a.sessionName = ""
+	a.currentSession = storage.SessionSummary{}
 	a.lastErr = ""
 	a.mu.Unlock()
 
@@ -390,6 +521,9 @@ func (a *App) ReturnToLiveMode() error {
 	a.offlineFilePath = ""
 	a.offlineFileName = ""
 	a.offlineParseFailed = 0
+	a.sessionFilePath = ""
+	a.sessionName = ""
+	a.currentSession = storage.SessionSummary{}
 	a.lastErr = ""
 	a.mu.Unlock()
 	return nil
@@ -740,6 +874,12 @@ func (a *App) ClearLogs() {
 	a.logStore.Clear()
 	a.parser.Reset()
 	a.clearAnalysisResults()
+	a.mu.Lock()
+	if a.currentSession.SessionID != "" {
+		a.currentSession.LogCount = 0
+		a.currentSession.AnalysisCount = 0
+	}
+	a.mu.Unlock()
 }
 
 func (a *App) GetLogBatch(afterID int64, limit int) logcat.LogBatch {
@@ -764,7 +904,111 @@ func (a *App) GetLogStatus() logcat.LogStatus {
 		OfflineFilePath:         a.offlineFilePath,
 		OfflineFileName:         a.offlineFileName,
 		OfflineParseFailedCount: a.offlineParseFailed,
+		SessionFilePath:         a.sessionFilePath,
+		SessionName:             a.sessionName,
 	}
+}
+
+func (a *App) buildSessionSnapshot(options SessionSaveOptions, entries []logcat.LogEntry) (storage.Session, error) {
+	config, err := workspace.LoadConfig(workspace.DefaultConfigPath())
+	if err != nil {
+		return storage.Session{}, err
+	}
+	active := workspace.ActiveWorkspace(config)
+	pidState := a.pidMap.State()
+
+	a.mu.Lock()
+	sourceMode := a.currentLogSourceLocked()
+	sourceName := ""
+	sourcePath := ""
+	selectedDevice := a.serial
+	currentSummary := a.currentSession
+	switch sourceMode {
+	case logcat.LogSourceOffline:
+		sourceName = a.offlineFileName
+		sourcePath = a.offlineFilePath
+	case logcat.LogSourceSession:
+		sourceName = a.sessionName
+		sourcePath = a.sessionFilePath
+		if currentSummary.SourceMode != "" {
+			sourceMode = currentSummary.SourceMode
+		}
+	default:
+		sourceName = selectedDevice
+	}
+	a.mu.Unlock()
+
+	name := strings.TrimSpace(options.Name)
+	if name == "" {
+		name = sourceName
+	}
+	if name == "" {
+		name = active.WorkspaceName
+	}
+	if name == "" {
+		name = "CatScope Session"
+	}
+
+	session := storage.Session{
+		SessionID:        currentSummary.SessionID,
+		Name:             name,
+		CreatedAt:        currentSummary.CreatedAt,
+		SourceMode:       sourceMode,
+		SourceName:       sourceName,
+		SourcePath:       sourcePath,
+		WorkspaceID:      active.ID,
+		WorkspaceName:    active.WorkspaceName,
+		ProjectPath:      active.ProjectPath,
+		PackageName:      firstNonEmptyString(options.Filters.PackageName, active.PackageName, pidState.PackageName),
+		SelectedDevice:   selectedDevice,
+		KnownPIDs:        append([]int(nil), pidState.KnownPIDs...),
+		Filters:          options.Filters,
+		AIContextOptions: options.AIContextOptions,
+		LogEntries:       append([]logcat.LogEntry(nil), entries...),
+		AnalysisResults:  a.analysisResultsSnapshot(),
+		Notes:            strings.TrimSpace(options.Notes),
+	}
+	if session.AIContextOptions.Language == "" {
+		session.AIContextOptions = active.AIContextOptions
+	}
+	return session, nil
+}
+
+func (a *App) analysisResultsSnapshot() []logcat.AnalysisResult {
+	a.analysisMu.RLock()
+	defer a.analysisMu.RUnlock()
+
+	results := make([]logcat.AnalysisResult, 0, len(a.analysis))
+	for _, result := range a.analysis {
+		results = append(results, result)
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ID < results[j].ID
+	})
+	return results
+}
+
+func ensureSessionExtension(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return path
+	}
+	if filepath.Ext(path) == "" {
+		return path + storage.SessionExtension
+	}
+	if !strings.EqualFold(filepath.Ext(path), storage.SessionExtension) {
+		return path + storage.SessionExtension
+	}
+	return path
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func (a *App) currentLogSourceLocked() string {

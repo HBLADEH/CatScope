@@ -45,7 +45,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, and lightweight Workspace / Filter Presets are available.
+CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, lightweight Workspace / Filter Presets, and Session save / restore are available.
 
 ## Features
 
@@ -109,6 +109,11 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File
   - [x] Save, select, update, and delete workspaces.
   - [x] Built-in presets: All Logs, Errors Only, AndroidRuntime, Native Crash, Install Errors, and Current Package.
   - [x] Save, apply, rename, and delete custom filter presets with level, package, keyword, regex, tags, and exclude keyword.
+- [x] Session Save / Restore
+  - [x] Save live or offline debugging state as a `.catscope-session` file.
+  - [x] Preserve logs, raw text, multiline stacktraces, package names, levels, tags, PID/TID, timestamps, filters, workspace metadata, AI Context options, notes, and Analysis results.
+  - [x] Open a session in Session mode, restore logs into the buffer, and continue search, filtering, details inspection, Analyzer, and AI Context generation.
+  - [x] Show session name, file path, log count, analysis count, and created time.
 - [ ] More export formats: csv, zip.
 - [ ] Module and variant selection for Build / Install / Launch.
 - [ ] macOS and Linux support.
@@ -149,7 +154,7 @@ wails doctor
 wails dev
 ```
 
-Live Logcat requires an Android device or emulator with USB debugging authorized. Offline Log File Viewer works without an Android device and can open `.txt`, `.log`, or `.jsonl` files for search, filtering, analysis, and AI Context generation.
+Live Logcat requires an Android device or emulator with USB debugging authorized. Offline Log File Viewer works without an Android device and can open `.txt`, `.log`, or `.jsonl` files for search, filtering, analysis, and AI Context generation. Session mode opens `.catscope-session` files, which are CatScope debugging-state files for saving live or offline analysis work and returning to it later.
 
 If the device is `unauthorized`, approve the authorization prompt on the device and refresh. If it is `offline`, reconnect the device or restart adb server and refresh.
 
@@ -252,7 +257,7 @@ npm run build
 
 ## Privacy
 
-CatScope reads device information and live Logcat through local adb. Offline log files are read from local disk only. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows, and are not written into Android project directories. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
+CatScope reads device information and live Logcat through local adb. Offline log files are read from local disk only. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows, and are not written into Android project directories. `.catscope-session` files are local JSON files that store a CatScope debugging state, including logs, filters, Analysis results, and AI Context options; CatScope does not upload them to the cloud. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs, session files, or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
 
 ## License
 

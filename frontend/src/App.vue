@@ -9,6 +9,7 @@ import {
   PauseOutline,
   PlayOutline,
   RefreshOutline,
+  SaveOutline,
   StopOutline,
   TrashOutline
 } from '@vicons/ionicons5'
@@ -48,6 +49,26 @@ const packageModeOptions: SelectOption[] = [
   { label: '3rd party', value: 'thirdParty' },
   { label: 'All packages', value: 'all' }
 ]
+
+const sourceLabel = computed(() => {
+  if (store.isSession) {
+    return 'Session'
+  }
+  if (store.isOffline) {
+    return 'Offline Log File'
+  }
+  return 'Live Device Logcat'
+})
+
+const sourceTagType = computed(() => {
+  if (store.isSession) {
+    return 'info'
+  }
+  if (store.isOffline) {
+    return 'warning'
+  }
+  return 'success'
+})
 
 function handleDeviceChange(value: string | number | null) {
   void store.selectDevice(typeof value === 'string' ? value : null)
@@ -135,14 +156,14 @@ onUnmounted(() => {
               Start
             </n-button>
 
-            <n-button :disabled="!store.running || store.isOffline" @click="store.stop">
+            <n-button :disabled="!store.running || store.isStaticSource" @click="store.stop">
               <template #icon>
                 <n-icon :component="StopOutline" />
               </template>
               Stop
             </n-button>
 
-            <n-button :disabled="!store.running || store.isOffline" @click="store.togglePause">
+            <n-button :disabled="!store.running || store.isStaticSource" @click="store.togglePause">
               <template #icon>
                 <n-icon :component="PauseOutline" />
               </template>
@@ -193,10 +214,10 @@ onUnmounted(() => {
               <section class="source-panel">
                 <h2>Log Source</h2>
                 <div class="source-mode-row">
-                  <n-tag :type="store.isOffline ? 'warning' : 'success'" size="small">
-                    {{ store.isOffline ? 'Offline Log File' : 'Live Device Logcat' }}
+                  <n-tag :type="sourceTagType" size="small">
+                    {{ sourceLabel }}
                   </n-tag>
-                  <n-button v-if="store.isOffline" size="small" tertiary @click="store.returnToLiveMode">
+                  <n-button v-if="store.isStaticSource" size="small" tertiary @click="store.returnToLiveMode">
                     Return to Live Mode
                   </n-button>
                 </div>
@@ -212,6 +233,49 @@ onUnmounted(() => {
                     </template>
                   </n-button>
                 </div>
+                <div class="project-path-row">
+                  <n-input
+                    v-model:value="store.sessionPathInput"
+                    placeholder="Path to .catscope-session"
+                    @keyup.enter="store.openSession()"
+                  />
+                  <n-button :loading="store.sessionLoading" tertiary @click="store.openSession()">
+                    <template #icon>
+                      <n-icon :component="FolderOpenOutline" />
+                    </template>
+                  </n-button>
+                </div>
+                <n-input
+                  v-model:value="store.sessionNameInput"
+                  placeholder="Session name"
+                />
+                <n-input
+                  v-model:value="store.sessionNotes"
+                  type="textarea"
+                  :autosize="{ minRows: 2, maxRows: 4 }"
+                  placeholder="Session notes"
+                />
+                <div class="project-actions">
+                  <n-button
+                    size="small"
+                    type="primary"
+                    tertiary
+                    :loading="store.sessionLoading"
+                    :disabled="store.logs.length === 0"
+                    @click="store.saveSession()"
+                  >
+                    <template #icon>
+                      <n-icon :component="SaveOutline" />
+                    </template>
+                    Save Session
+                  </n-button>
+                  <n-button size="small" tertiary :loading="store.sessionLoading" @click="store.openSession()">
+                    <template #icon>
+                      <n-icon :component="FolderOpenOutline" />
+                    </template>
+                    Open Session
+                  </n-button>
+                </div>
                 <dl v-if="store.isOffline" class="source-summary">
                   <dt>File</dt>
                   <dd>{{ store.status.offlineFileName || '-' }}</dd>
@@ -221,6 +285,18 @@ onUnmounted(() => {
                   <dd>{{ store.status.count }}</dd>
                   <dt>Raw Lines</dt>
                   <dd>{{ store.status.offlineParseFailedCount || 0 }}</dd>
+                </dl>
+                <dl v-if="store.isSession || store.currentSession" class="source-summary">
+                  <dt>Name</dt>
+                  <dd>{{ store.currentSession?.name || store.status.sessionName || '-' }}</dd>
+                  <dt>Path</dt>
+                  <dd>{{ store.currentSession?.filePath || store.status.sessionFilePath || '-' }}</dd>
+                  <dt>Logs</dt>
+                  <dd>{{ store.currentSession?.logCount ?? store.status.count }}</dd>
+                  <dt>Analysis</dt>
+                  <dd>{{ store.currentSession?.analysisCount ?? store.analysisResults.length }}</dd>
+                  <dt>Created</dt>
+                  <dd>{{ store.currentSession?.createdAt || '-' }}</dd>
                 </dl>
               </section>
 
@@ -419,7 +495,7 @@ onUnmounted(() => {
 
           <footer class="statusbar">
             <span>Device: {{ store.selectedSerial || 'none' }}</span>
-            <span>Source: {{ store.isOffline ? 'offline' : 'live' }}</span>
+            <span>Source: {{ store.logSource }}</span>
             <span>Visible: {{ store.filteredLogs.length }}</span>
             <span>Package: {{ store.selectedPackage || 'all' }}</span>
             <span>PID: {{ store.currentPIDs.length ? store.currentPIDs.join(',') : 'none' }}</span>

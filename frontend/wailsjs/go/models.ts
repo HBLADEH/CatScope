@@ -354,6 +354,8 @@ export namespace logcat {
 	    offlineFilePath?: string;
 	    offlineFileName?: string;
 	    offlineParseFailedCount?: number;
+	    sessionFilePath?: string;
+	    sessionName?: string;
 
 	    static createFrom(source: any = {}) {
 	        return new LogStatus(source);
@@ -372,6 +374,8 @@ export namespace logcat {
 	        this.offlineFilePath = source["offlineFilePath"];
 	        this.offlineFileName = source["offlineFileName"];
 	        this.offlineParseFailedCount = source["offlineParseFailedCount"];
+	        this.sessionFilePath = source["sessionFilePath"];
+	        this.sessionName = source["sessionName"];
 	    }
 	}
 	export class OfflineLogFileResult {
@@ -476,6 +480,204 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class SessionOpenResult {
+	    session: storage.Session;
+	    summary: storage.SessionSummary;
+	    entries: logcat.LogEntry[];
+	    analysisResults: logcat.AnalysisResult[];
+
+	    static createFrom(source: any = {}) {
+	        return new SessionOpenResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.session = this.convertValues(source["session"], storage.Session);
+	        this.summary = this.convertValues(source["summary"], storage.SessionSummary);
+	        this.entries = this.convertValues(source["entries"], logcat.LogEntry);
+	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SessionSaveOptions {
+	    name: string;
+	    filters: storage.SessionFilters;
+	    aiContextOptions: ai.AIContextOptions;
+	    notes: string;
+
+	    static createFrom(source: any = {}) {
+	        return new SessionSaveOptions(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.filters = this.convertValues(source["filters"], storage.SessionFilters);
+	        this.aiContextOptions = this.convertValues(source["aiContextOptions"], ai.AIContextOptions);
+	        this.notes = source["notes"];
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace storage {
+
+	export class SessionFilters {
+	    level: string[];
+	    packageName: string;
+	    keyword: string;
+	    regexEnabled: boolean;
+	    tags: string[];
+	    excludeKeyword: string;
+
+	    static createFrom(source: any = {}) {
+	        return new SessionFilters(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.level = source["level"];
+	        this.packageName = source["packageName"];
+	        this.keyword = source["keyword"];
+	        this.regexEnabled = source["regexEnabled"];
+	        this.tags = source["tags"];
+	        this.excludeKeyword = source["excludeKeyword"];
+	    }
+	}
+	export class Session {
+	    version: number;
+	    sessionId: string;
+	    name: string;
+	    createdAt: string;
+	    updatedAt: string;
+	    sourceMode: string;
+	    sourceName: string;
+	    sourcePath: string;
+	    workspaceId: string;
+	    workspaceName: string;
+	    projectPath: string;
+	    packageName: string;
+	    selectedDevice: string;
+	    knownPids: number[];
+	    filters: SessionFilters;
+	    aiContextOptions: ai.AIContextOptions;
+	    logEntries: logcat.LogEntry[];
+	    analysisResults: logcat.AnalysisResult[];
+	    notes: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Session(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.sessionId = source["sessionId"];
+	        this.name = source["name"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.sourceMode = source["sourceMode"];
+	        this.sourceName = source["sourceName"];
+	        this.sourcePath = source["sourcePath"];
+	        this.workspaceId = source["workspaceId"];
+	        this.workspaceName = source["workspaceName"];
+	        this.projectPath = source["projectPath"];
+	        this.packageName = source["packageName"];
+	        this.selectedDevice = source["selectedDevice"];
+	        this.knownPids = source["knownPids"];
+	        this.filters = this.convertValues(source["filters"], SessionFilters);
+	        this.aiContextOptions = this.convertValues(source["aiContextOptions"], ai.AIContextOptions);
+	        this.logEntries = this.convertValues(source["logEntries"], logcat.LogEntry);
+	        this.analysisResults = this.convertValues(source["analysisResults"], logcat.AnalysisResult);
+	        this.notes = source["notes"];
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+	export class SessionSummary {
+	    sessionId: string;
+	    name: string;
+	    filePath: string;
+	    createdAt: string;
+	    updatedAt: string;
+	    sourceMode: string;
+	    sourceName: string;
+	    workspaceName: string;
+	    packageName: string;
+	    logCount: number;
+	    analysisCount: number;
+
+	    static createFrom(source: any = {}) {
+	        return new SessionSummary(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sessionId = source["sessionId"];
+	        this.name = source["name"];
+	        this.filePath = source["filePath"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.sourceMode = source["sourceMode"];
+	        this.sourceName = source["sourceName"];
+	        this.workspaceName = source["workspaceName"];
+	        this.packageName = source["packageName"];
+	        this.logCount = source["logCount"];
+	        this.analysisCount = source["analysisCount"];
+	    }
 	}
 
 }

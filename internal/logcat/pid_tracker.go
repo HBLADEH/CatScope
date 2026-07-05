@@ -44,6 +44,23 @@ func (m *PIDMapper) Clear() {
 	m.lastPID = 0
 }
 
+func (m *PIDMapper) Restore(packageName string, knownPIDs []int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.packageName = packageName
+	m.current = map[int]bool{}
+	m.known = map[int]string{}
+	m.lastPID = 0
+	for _, pid := range knownPIDs {
+		if pid <= 0 {
+			continue
+		}
+		m.known[pid] = packageName
+		m.lastPID = pid
+	}
+}
+
 func (m *PIDMapper) Update(pids []int) PackagePIDState {
 	m.mu.Lock()
 	defer m.mu.Unlock()
