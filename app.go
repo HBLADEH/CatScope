@@ -98,6 +98,65 @@ func (a *App) FindADB(configuredPath string) (string, error) {
 	return path, nil
 }
 
+func (a *App) SelectADBExecutable() (string, error) {
+	path, err := wailsruntime.OpenFileDialog(a.context(), wailsruntime.OpenDialogOptions{
+		Title: "Select adb executable",
+		Filters: []wailsruntime.FileFilter{
+			{
+				DisplayName: "ADB executable",
+				Pattern:     "adb.exe;adb",
+			},
+			{
+				DisplayName: "All files",
+				Pattern:     "*.*",
+			},
+		},
+	})
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	return strings.TrimSpace(path), nil
+}
+
+func (a *App) UseADBPath(configuredPath string) (string, error) {
+	configuredPath = strings.TrimSpace(configuredPath)
+	if err := a.StopLogcat(); err != nil {
+		return "", err
+	}
+
+	config, err := workspace.LoadConfig(workspace.DefaultConfigPath())
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+
+	if configuredPath == "" {
+		config.ADBPath = ""
+		a.mu.Lock()
+		a.adbPath = ""
+		a.mu.Unlock()
+		if err := workspace.SaveConfig(workspace.DefaultConfigPath(), config); err != nil {
+			a.setLastError(err.Error())
+			return "", err
+		}
+		a.setLastError("")
+		return "", nil
+	}
+
+	resolved, err := a.FindADB(configuredPath)
+	if err != nil {
+		return "", err
+	}
+	config.ADBPath = resolved
+	if err := workspace.SaveConfig(workspace.DefaultConfigPath(), config); err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	a.setLastError("")
+	return resolved, nil
+}
+
 func (a *App) ListDevices() ([]adb.AndroidDevice, error) {
 	adbPath, err := a.ensureADB("")
 	if err != nil {
@@ -565,9 +624,15 @@ func (a *App) LoadConfig() (workspace.AppConfig, error) {
 }
 
 func (a *App) SaveConfig(config workspace.AppConfig) error {
+	config = workspace.NormalizeConfig(config)
 	if err := workspace.SaveConfig(workspace.DefaultConfigPath(), config); err != nil {
 		a.setLastError(err.Error())
 		return err
+	}
+	if strings.TrimSpace(config.ADBPath) == "" {
+		a.mu.Lock()
+		a.adbPath = ""
+		a.mu.Unlock()
 	}
 	a.setLastError("")
 	return nil
@@ -1025,6 +1090,12 @@ func (a *App) ensureADB(configuredPath string) (string, error) {
 
 	if configuredPath == "" && cached != "" {
 		return cached, nil
+	}
+	if configuredPath == "" {
+		config, err := workspace.LoadConfig(workspace.DefaultConfigPath())
+		if err == nil {
+			configuredPath = config.ADBPath
+		}
 	}
 	return a.FindADB(configuredPath)
 }

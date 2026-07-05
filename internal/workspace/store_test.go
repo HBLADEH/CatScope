@@ -33,6 +33,7 @@ func TestSaveLoadConfig(t *testing.T) {
 	config.Workspaces[0].ProjectPath = filepath.Join("C:\\", "src", "demo")
 	config.Workspaces[0].PackageName = "com.example.demo"
 	config.Workspaces[0].SearchKeyword = "boom"
+	config.ADBPath = filepath.Join("C:\\", "Android", "platform-tools", "adb.exe")
 
 	if err := SaveConfig(path, config); err != nil {
 		t.Fatalf("SaveConfig failed: %v", err)
@@ -44,6 +45,9 @@ func TestSaveLoadConfig(t *testing.T) {
 	active := ActiveWorkspace(loaded)
 	if active.WorkspaceName != "Demo" || active.PackageName != "com.example.demo" || active.SearchKeyword != "boom" {
 		t.Fatalf("unexpected loaded workspace: %+v", active)
+	}
+	if loaded.ADBPath == "" {
+		t.Fatalf("expected adb path to be persisted: %+v", loaded)
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 
 type AppConfig struct {
 	ActiveWorkspaceID string            `json:"activeWorkspaceId"`
+	ADBPath           string            `json:"adbPath,omitempty"`
 	Workspaces        []WorkspaceConfig `json:"workspaces"`
 	FilterPresets     []FilterPreset    `json:"filterPresets"`
 }
@@ -132,6 +133,7 @@ func SaveConfig(path string, config AppConfig) error {
 }
 
 func NormalizeConfig(config AppConfig) AppConfig {
+	config.ADBPath = cleanPath(config.ADBPath)
 	if len(config.Workspaces) == 0 {
 		config.Workspaces = []WorkspaceConfig{DefaultWorkspaceConfig()}
 	}

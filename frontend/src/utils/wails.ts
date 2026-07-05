@@ -34,6 +34,8 @@ async function call<T>(method: string, ...args: unknown[]): Promise<T> {
 
 export const backend = {
   findADB: (configuredPath = '') => call<string>('FindADB', configuredPath),
+  selectADBExecutable: () => call<string>('SelectADBExecutable'),
+  useADBPath: (configuredPath = '') => call<string>('UseADBPath', configuredPath),
   listDevices: () => call<AndroidDevice[]>('ListDevices'),
   getDeviceInfo: (serial: string) => call<AndroidDevice>('GetDeviceInfo', serial),
   setActiveDevice: (serial: string) => call<void>('SetActiveDevice', serial),

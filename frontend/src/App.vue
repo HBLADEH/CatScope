@@ -221,6 +221,30 @@ onUnmounted(() => {
                     Return to Live Mode
                   </n-button>
                 </div>
+                <h2 class="subsection-title">ADB Engine</h2>
+                <div class="project-path-row">
+                  <n-input
+                    v-model:value="store.adbPathInput"
+                    placeholder="Custom adb.exe path, or leave empty for auto"
+                    @keyup.enter="store.useADBPath()"
+                  />
+                  <n-button :loading="store.loading" tertiary @click="store.chooseADBExecutable">
+                    <template #icon>
+                      <n-icon :component="FolderOpenOutline" />
+                    </template>
+                  </n-button>
+                </div>
+                <div class="project-actions">
+                  <n-button size="small" type="primary" tertiary :loading="store.loading" @click="store.useADBPath()">
+                    Use ADB
+                  </n-button>
+                  <n-button size="small" tertiary :disabled="!store.adbPathInput && !store.resolvedADBPath" @click="store.useADBPath('')">
+                    Auto Detect
+                  </n-button>
+                </div>
+                <p class="adb-path-hint">
+                  {{ store.resolvedADBPath ? `Current: ${store.resolvedADBPath}` : 'Current: auto-detect on refresh' }}
+                </p>
                 <div class="project-path-row">
                   <n-input
                     v-model:value="store.offlinePathInput"

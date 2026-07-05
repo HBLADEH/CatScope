@@ -168,6 +168,20 @@ input {
   margin-top: 4px;
 }
 
+.subsection-title {
+  margin-top: 6px !important;
+}
+
+.adb-path-hint {
+  min-width: 0;
+  margin: -2px 0 2px;
+  overflow: hidden;
+  color: #8e9990;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .project-path-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 34px;

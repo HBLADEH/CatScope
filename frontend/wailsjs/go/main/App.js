@@ -146,6 +146,10 @@ export function SaveWorkspace(arg1) {
   return window['go']['main']['App']['SaveWorkspace'](arg1);
 }
 
+export function SelectADBExecutable() {
+  return window['go']['main']['App']['SelectADBExecutable']();
+}
+
 export function SelectProjectDirectory() {
   return window['go']['main']['App']['SelectProjectDirectory']();
 }
@@ -168,4 +172,8 @@ export function StartLogcat(arg1) {
 
 export function StopLogcat() {
   return window['go']['main']['App']['StopLogcat']();
+}
+
+export function UseADBPath(arg1) {
+  return window['go']['main']['App']['UseADBPath'](arg1);
 }

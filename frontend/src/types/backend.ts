@@ -146,6 +146,7 @@ export interface FilterPreset {
 
 export interface AppConfig {
   activeWorkspaceId: string
+  adbPath?: string
   workspaces: WorkspaceConfig[]
   filterPresets: FilterPreset[]
 }

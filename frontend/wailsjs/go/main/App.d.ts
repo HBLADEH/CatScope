@@ -80,6 +80,8 @@ export function SaveSession(arg1:string,arg2:main.SessionSaveOptions):Promise<st
 
 export function SaveWorkspace(arg1:workspace.WorkspaceConfig):Promise<workspace.AppConfig>;
 
+export function SelectADBExecutable():Promise<string>;
+
 export function SelectProjectDirectory():Promise<string>;
 
 export function SetActiveDevice(arg1:string):Promise<void>;
@@ -91,3 +93,5 @@ export function SetTrackedPackage(arg1:string,arg2:string):Promise<void>;
 export function StartLogcat(arg1:string):Promise<void>;
 
 export function StopLogcat():Promise<void>;
+
+export function UseADBPath(arg1:string):Promise<string>;

@@ -58,6 +58,7 @@ function defaultAppConfig(): AppConfig {
   const workspace = defaultWorkspaceConfig()
   return {
     activeWorkspaceId: workspace.id,
+    adbPath: '',
     workspaces: [workspace],
     filterPresets: []
   }
@@ -124,6 +125,7 @@ export const useLogStore = defineStore('logs', () => {
   const installLoading = ref(false)
   const launchLoading = ref(false)
   const appConfig = ref<AppConfig>(initialConfig)
+  const adbPathInput = ref('')
   const workspaces = ref<WorkspaceConfig[]>(initialConfig.workspaces)
   const activeWorkspaceID = ref(initialConfig.activeWorkspaceId)
   const filterPresets = ref<FilterPreset[]>(initialConfig.filterPresets)
@@ -148,6 +150,7 @@ export const useLogStore = defineStore('logs', () => {
   const isSession = computed(() => logSource.value === 'session')
   const isStaticSource = computed(() => isOffline.value || isSession.value)
   const selectedDevice = computed(() => devices.value.find((device) => device.serial === selectedSerial.value))
+  const resolvedADBPath = computed(() => status.value.adbPath || '')
   const selectedDeviceState = computed(() => selectedDevice.value?.state ?? 'unknown')
   const canStart = computed(() => !isStaticSource.value && Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
   const canSelectPackage = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
@@ -294,6 +297,45 @@ export const useLogStore = defineStore('logs', () => {
       }
     } catch (err) {
       setError(err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function chooseADBExecutable() {
+    try {
+      const path = await backend.selectADBExecutable()
+      if (!path) {
+        return
+      }
+      adbPathInput.value = path
+      await useADBPath(path)
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function useADBPath(path = adbPathInput.value) {
+    loading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      const resolved = await backend.useADBPath(path.trim())
+      adbPathInput.value = resolved
+      devices.value = []
+      selectedSerial.value = ''
+      packages.value = []
+      selectedPackage.value = ''
+      packagePIDState.value = { packageName: '' }
+      await fetchStatus()
+      await loadConfig()
+      notice.value = resolved
+        ? `Using adb: ${resolved}`
+        : 'ADB path cleared. CatScope will auto-detect adb.'
+      await refreshDevices()
+    } catch (err) {
+      setError(err)
+      await fetchStatus()
     } finally {
       loading.value = false
     }
@@ -1083,6 +1125,7 @@ export const useLogStore = defineStore('logs', () => {
       ...defaultAppConfig(),
       ...config
     }
+    adbPathInput.value = appConfig.value.adbPath || ''
     workspaces.value = appConfig.value.workspaces ?? []
     filterPresets.value = appConfig.value.filterPresets ?? []
     activeWorkspaceID.value = appConfig.value.activeWorkspaceId
@@ -1200,6 +1243,8 @@ export const useLogStore = defineStore('logs', () => {
     notice,
     status,
     appConfig,
+    adbPathInput,
+    resolvedADBPath,
     workspaces,
     activeWorkspaceID,
     activeWorkspace,
@@ -1250,6 +1295,8 @@ export const useLogStore = defineStore('logs', () => {
     packageHint,
     tableEmptyMessage,
     refreshDevices,
+    chooseADBExecutable,
+    useADBPath,
     refreshPackages,
     setPackageMode,
     selectDevice,
