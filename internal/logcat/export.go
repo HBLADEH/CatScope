@@ -1,6 +1,7 @@
 package logcat
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -16,6 +17,17 @@ func FormatEntriesText(entries []LogEntry) string {
 		}
 	}
 	return builder.String()
+}
+
+func FormatEntriesJSONL(entries []LogEntry) (string, error) {
+	var builder strings.Builder
+	encoder := json.NewEncoder(&builder)
+	for _, entry := range entries {
+		if err := encoder.Encode(entry); err != nil {
+			return "", fmt.Errorf("encode log entry failed: %w", err)
+		}
+	}
+	return builder.String(), nil
 }
 
 func formatEntryLine(entry LogEntry) string {

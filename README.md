@@ -45,7 +45,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, and lightweight Workspace / Filter Presets are available.
+CatScope is currently in the MVP stage. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, and lightweight Workspace / Filter Presets are available.
 
 ## Features
 
@@ -72,7 +72,14 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
 - [x] Log parsing and interaction
   - [x] threadtime parsing, raw line preservation, and multiline log merging.
   - [x] Java stacktrace and AndroidRuntime `FATAL EXCEPTION` grouping.
-  - [x] Pause, clear, detail / analysis panel, and txt export.
+  - [x] Pause, clear, detail / analysis panel, txt export, and jsonl export.
+- [x] Offline Log File Viewer
+  - [x] Open `.txt`, `.log`, and `.jsonl` log files.
+  - [x] Parse ordinary threadtime Logcat text files with the existing parser.
+  - [x] Preserve unparsed raw lines and multiline stacktraces.
+  - [x] Reuse search, level, tag, exclude, regex, package filtering, virtual scrolling, details, Analyzer, and AI Context generation.
+  - [x] Show live/offline source mode, file path, file name, entry count, and raw-line parse count.
+  - [x] Reopen CatScope JSONL exports as offline logs.
 - [x] Rule-based Analyzer without external AI API calls
   - [x] Java Crash: `AndroidRuntime`, `FATAL EXCEPTION`, `Process:`, `Caused by:`, and common exception types.
   - [x] Native Crash: `SIGSEGV`, `SIGABRT`, `backtrace:`, `tombstone`, `Abort message`, `fault addr`, and `libxxx.so`.
@@ -102,8 +109,7 @@ CatScope is currently in the MVP stage. The core Logcat Viewer, rule-based Crash
   - [x] Save, select, update, and delete workspaces.
   - [x] Built-in presets: All Logs, Errors Only, AndroidRuntime, Native Crash, Install Errors, and Current Package.
   - [x] Save, apply, rename, and delete custom filter presets with level, package, keyword, regex, tags, and exclude keyword.
-- [ ] Offline historical log viewer.
-- [ ] More export formats: jsonl, csv, zip.
+- [ ] More export formats: csv, zip.
 - [ ] Module and variant selection for Build / Install / Launch.
 - [ ] macOS and Linux support.
 
@@ -143,7 +149,7 @@ wails doctor
 wails dev
 ```
 
-Live Logcat requires an Android device or emulator with USB debugging authorized.
+Live Logcat requires an Android device or emulator with USB debugging authorized. Offline Log File Viewer works without an Android device and can open `.txt`, `.log`, or `.jsonl` files for search, filtering, analysis, and AI Context generation.
 
 If the device is `unauthorized`, approve the authorization prompt on the device and refresh. If it is `offline`, reconnect the device or restart adb server and refresh.
 
@@ -167,7 +173,7 @@ Vue 3 keeps the desktop-tool UI easy to evolve. Naive UI fits dark themes, forms
 
 ## Project Scope
 
-CatScope focuses on Android troubleshooting workflows around Logcat. The first goal is an excellent Logcat Viewer; build, install, launch, crash analysis, AI-ready context, and saved workspace presets are adjacent workflows that support the same debugging loop. The current build runner is intentionally small: it runs Gradle wrapper tasks such as the default `assembleDebug`, but it is not Gradle Project Sync and it is not a full IDE. The multi-workspace support is also lightweight configuration, not a full IDE project system.
+CatScope focuses on Android troubleshooting workflows around Logcat. The first goal is an excellent live and offline Logcat Viewer; build, install, launch, crash analysis, AI-ready context, and saved workspace presets are adjacent workflows that support the same debugging loop. The current build runner is intentionally small: it runs Gradle wrapper tasks such as the default `assembleDebug`, but it is not Gradle Project Sync and it is not a full IDE. The multi-workspace support is also lightweight configuration, not a full IDE project system.
 
 CatScope is not intended to provide:
 
@@ -246,7 +252,7 @@ npm run build
 
 ## Privacy
 
-CatScope reads device information and Logcat through local adb. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows, and are not written into Android project directories. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
+CatScope reads device information and live Logcat through local adb. Offline log files are read from local disk only. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows, and are not written into Android project directories. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
 
 ## License
 

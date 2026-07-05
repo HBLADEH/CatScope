@@ -33,7 +33,7 @@ input {
 
 .toolbar {
   display: grid;
-  grid-template-columns: auto minmax(200px, 270px) 120px minmax(220px, 300px) auto auto auto auto auto auto auto minmax(160px, 1fr) minmax(150px, 200px);
+  grid-template-columns: auto minmax(190px, 250px) 110px minmax(200px, 280px) auto auto auto auto auto auto auto auto minmax(150px, 1fr) minmax(140px, 190px);
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -111,12 +111,24 @@ input {
 }
 
 .project-panel,
-.filter-panel {
+.filter-panel,
+.source-panel {
   display: grid;
   gap: 8px;
   margin-bottom: 18px;
   padding-bottom: 16px;
   border-bottom: 1px solid #2b302c;
+}
+
+.source-mode-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.source-summary {
+  margin-top: 4px;
 }
 
 .project-path-row {

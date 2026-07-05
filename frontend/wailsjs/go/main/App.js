@@ -38,6 +38,10 @@ export function ExportLogs(arg1) {
   return window['go']['main']['App']['ExportLogs'](arg1);
 }
 
+export function ExportLogsJSONL(arg1) {
+  return window['go']['main']['App']['ExportLogsJSONL'](arg1);
+}
+
 export function FindADB(arg1) {
   return window['go']['main']['App']['FindADB'](arg1);
 }
@@ -98,8 +102,20 @@ export function LoadConfig() {
   return window['go']['main']['App']['LoadConfig']();
 }
 
+export function LoadOfflineLogFile(arg1) {
+  return window['go']['main']['App']['LoadOfflineLogFile'](arg1);
+}
+
+export function OpenLogFile(arg1) {
+  return window['go']['main']['App']['OpenLogFile'](arg1);
+}
+
 export function ResetConfig() {
   return window['go']['main']['App']['ResetConfig']();
+}
+
+export function ReturnToLiveMode() {
+  return window['go']['main']['App']['ReturnToLiveMode']();
 }
 
 export function SaveConfig(arg1) {

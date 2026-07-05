@@ -13,6 +13,7 @@ import type {
   LaunchResult,
   LogBatch,
   LogEntry,
+  OfflineLogFileResult,
   PackagePIDState,
   ProjectConfig,
   WorkspaceConfig,
@@ -61,6 +62,10 @@ export const backend = {
   startLogcat: (serial: string) => call<void>('StartLogcat', serial),
   stopLogcat: () => call<void>('StopLogcat'),
   exportLogs: (entries: unknown[]) => call<string>('ExportLogs', entries),
+  exportLogsJSONL: (entries: unknown[]) => call<string>('ExportLogsJSONL', entries),
+  openLogFile: (path = '') => call<OfflineLogFileResult>('OpenLogFile', path),
+  loadOfflineLogFile: (path: string) => call<OfflineLogFileResult>('LoadOfflineLogFile', path),
+  returnToLiveMode: () => call<void>('ReturnToLiveMode'),
   clearLogs: () => call<void>('ClearLogs'),
   getLogBatch: (afterID: number, limit: number) => call<LogBatch>('GetLogBatch', afterID, limit),
   getLogStatus: () => call<LogStatus>('GetLogStatus')

@@ -108,7 +108,8 @@ export const useLogStore = defineStore('logs', () => {
     serial: '',
     count: 0,
     discardedCount: 0,
-    lastID: 0
+    lastID: 0,
+    source: 'live'
   })
   const projectConfig = ref<ProjectConfig>(defaultProjectConfig())
   const latestAPK = ref<APKInfo | null>(null)
@@ -131,11 +132,15 @@ export const useLogStore = defineStore('logs', () => {
   const workspaceName = ref('Default Workspace')
   const autoStartLogcat = ref(false)
   const autoClearOnLaunch = ref(false)
+  const offlinePathInput = ref('')
+  const offlineLoading = ref(false)
 
   const running = computed(() => status.value.running)
+  const logSource = computed(() => status.value.source ?? 'live')
+  const isOffline = computed(() => logSource.value === 'offline')
   const selectedDevice = computed(() => devices.value.find((device) => device.serial === selectedSerial.value))
   const selectedDeviceState = computed(() => selectedDevice.value?.state ?? 'unknown')
-  const canStart = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
+  const canStart = computed(() => !isOffline.value && Boolean(selectedSerial.value) && selectedDeviceState.value === 'device' && !running.value)
   const canSelectPackage = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
   const canUseDeviceActions = computed(() => Boolean(selectedSerial.value) && selectedDeviceState.value === 'device')
   const canBuildProject = computed(() => Boolean(projectConfig.value.projectPath.trim()))
@@ -187,8 +192,11 @@ export const useLogStore = defineStore('logs', () => {
     return ''
   })
   const tableEmptyMessage = computed(() => {
-    if (devices.value.length === 0) {
-      return 'No device connected.'
+    if (isOffline.value && logs.value.length === 0) {
+      return 'Offline log file is loaded but contains no parsed entries.'
+    }
+    if (!isOffline.value && devices.value.length === 0) {
+      return 'No device connected. Open an offline log file or refresh devices.'
     }
     if (!running.value && logs.value.length === 0) {
       return 'Logcat is stopped. Choose a device and press Start.'
@@ -335,6 +343,53 @@ export const useLogStore = defineStore('logs', () => {
     }
   }
 
+  async function openLogFile(path = offlinePathInput.value) {
+    offlineLoading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      stopPolling()
+      const result = await backend.openLogFile(path.trim())
+      logs.value = result.entries ?? []
+      selectedLog.value = null
+      analysisResults.value = []
+      selectedAnalysis.value = null
+      analysisIDs.clear()
+      mergeAnalysisResults(result.analysisResults ?? [])
+      paused.value = false
+      offlinePathInput.value = result.filePath
+      await fetchStatus()
+      notice.value = `Opened ${result.fileName}: ${result.count} log entries, ${result.parseFailedCount} raw line(s).`
+    } catch (err) {
+      setError(err)
+      await fetchStatus()
+    } finally {
+      offlineLoading.value = false
+    }
+  }
+
+  async function returnToLiveMode() {
+    loading.value = true
+    error.value = ''
+    notice.value = ''
+    try {
+      stopPolling()
+      await backend.returnToLiveMode()
+      logs.value = []
+      selectedLog.value = null
+      analysisResults.value = []
+      selectedAnalysis.value = null
+      analysisIDs.clear()
+      paused.value = false
+      await fetchStatus()
+      notice.value = 'Returned to live device logcat mode.'
+    } catch (err) {
+      setError(err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function selectDevice(serial: string | null) {
     const nextSerial = serial ?? ''
     if (nextSerial === selectedSerial.value) {
@@ -417,6 +472,17 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const path = await backend.exportLogs(filteredLogs.value)
       notice.value = `Exported ${filteredLogs.value.length} log entries to ${path}`
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  async function exportFilteredJSONL() {
+    error.value = ''
+    notice.value = ''
+    try {
+      const path = await backend.exportLogsJSONL(filteredLogs.value)
+      notice.value = `Exported ${filteredLogs.value.length} log entries as JSONL to ${path}`
     } catch (err) {
       setError(err)
     }
@@ -698,7 +764,7 @@ export const useLogStore = defineStore('logs', () => {
       if (result.success) {
         projectConfig.value.packageName = result.packageName
         await saveProjectConfig()
-        if (autoClearOnLaunch.value) {
+        if (autoClearOnLaunch.value && !isOffline.value) {
           await clear()
         }
         await selectPackage(result.packageName)
@@ -742,7 +808,7 @@ export const useLogStore = defineStore('logs', () => {
       if (result.launch?.success) {
         projectConfig.value.packageName = result.launch.packageName
         await saveProjectConfig()
-        if (autoClearOnLaunch.value) {
+        if (autoClearOnLaunch.value && !isOffline.value) {
           await clear()
         }
         await selectPackage(result.launch.packageName)
@@ -1032,6 +1098,8 @@ export const useLogStore = defineStore('logs', () => {
     workspaceName,
     autoStartLogcat,
     autoClearOnLaunch,
+    offlinePathInput,
+    offlineLoading,
     regexEnabled,
     tagFilter,
     excludeKeyword,
@@ -1047,6 +1115,8 @@ export const useLogStore = defineStore('logs', () => {
     installLoading,
     launchLoading,
     running,
+    logSource,
+    isOffline,
     selectedDeviceState,
     canStart,
     canSelectPackage,
@@ -1068,6 +1138,9 @@ export const useLogStore = defineStore('logs', () => {
     clear,
     clearSearch,
     exportFiltered,
+    exportFilteredJSONL,
+    openLogFile,
+    returnToLiveMode,
     copyAIContext,
     exportAIContext,
     loadConfig,

@@ -22,17 +22,21 @@ import (
 type App struct {
 	ctx context.Context
 
-	mu        sync.Mutex
-	adbPath   string
-	stream    *adb.LogcatProcess
-	lastErr   string
-	serial    string
-	running   bool
-	streamID  int64
-	parser    *logcat.Parser
-	logStore  *logcat.RingBuffer
-	pidMap    *logcat.PIDMapper
-	pidCancel context.CancelFunc
+	mu                 sync.Mutex
+	adbPath            string
+	stream             *adb.LogcatProcess
+	lastErr            string
+	serial             string
+	running            bool
+	streamID           int64
+	parser             *logcat.Parser
+	logStore           *logcat.RingBuffer
+	pidMap             *logcat.PIDMapper
+	pidCancel          context.CancelFunc
+	logSource          string
+	offlineFilePath    string
+	offlineFileName    string
+	offlineParseFailed int
 
 	analysisMu sync.RWMutex
 	analysis   map[string]logcat.AnalysisResult
@@ -49,10 +53,11 @@ type BuildInstallLaunchResult struct {
 
 func NewApp() *App {
 	return &App{
-		parser:   logcat.NewParser(),
-		logStore: logcat.NewRingBuffer(100000),
-		pidMap:   logcat.NewPIDMapper(),
-		analysis: map[string]logcat.AnalysisResult{},
+		parser:    logcat.NewParser(),
+		logStore:  logcat.NewRingBuffer(100000),
+		pidMap:    logcat.NewPIDMapper(),
+		analysis:  map[string]logcat.AnalysisResult{},
+		logSource: logcat.LogSourceLive,
 	}
 }
 
@@ -194,10 +199,15 @@ func (a *App) StartLogcat(serial string) error {
 	_ = a.StopLogcat()
 	a.logStore.Clear()
 	a.parser.Reset()
+	a.clearAnalysisResults()
 
 	a.mu.Lock()
 	a.streamID++
 	streamID := a.streamID
+	a.logSource = logcat.LogSourceLive
+	a.offlineFilePath = ""
+	a.offlineFileName = ""
+	a.offlineParseFailed = 0
 	a.mu.Unlock()
 
 	proc, err := adb.StartLogcat(a.context(), adbPath, serial, a.ingestLogLine, a.setLastError, func(err error) {
@@ -273,6 +283,116 @@ func (a *App) ExportLogs(entries []logcat.LogEntry) (string, error) {
 	}
 	a.setLastError("")
 	return path, nil
+}
+
+func (a *App) ExportLogsJSONL(entries []logcat.LogEntry) (string, error) {
+	if len(entries) == 0 {
+		return "", errors.New("no logs to export")
+	}
+
+	path, err := wailsruntime.SaveFileDialog(a.context(), wailsruntime.SaveDialogOptions{
+		DefaultFilename: "catscope-logcat.jsonl",
+		Filters: []wailsruntime.FileFilter{
+			{
+				DisplayName: "JSON Lines (*.jsonl)",
+				Pattern:     "*.jsonl",
+			},
+		},
+	})
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	if strings.TrimSpace(path) == "" {
+		return "", errors.New("export canceled")
+	}
+	if filepath.Ext(path) == "" {
+		path += ".jsonl"
+	}
+
+	content, err := logcat.FormatEntriesJSONL(entries)
+	if err != nil {
+		a.setLastError(err.Error())
+		return "", err
+	}
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		a.setLastError(err.Error())
+		return "", fmt.Errorf("export jsonl logs failed: %w", err)
+	}
+	a.setLastError("")
+	return path, nil
+}
+
+func (a *App) OpenLogFile(path string) (logcat.OfflineLogFileResult, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		selected, err := wailsruntime.OpenFileDialog(a.context(), wailsruntime.OpenDialogOptions{
+			Title: "Open Log File",
+			Filters: []wailsruntime.FileFilter{
+				{DisplayName: "Log Files (*.txt;*.log;*.jsonl)", Pattern: "*.txt;*.log;*.jsonl"},
+				{DisplayName: "Text Logs (*.txt)", Pattern: "*.txt"},
+				{DisplayName: "Logcat Logs (*.log)", Pattern: "*.log"},
+				{DisplayName: "JSON Lines (*.jsonl)", Pattern: "*.jsonl"},
+			},
+		})
+		if err != nil {
+			a.setLastError(err.Error())
+			return logcat.OfflineLogFileResult{}, err
+		}
+		path = strings.TrimSpace(selected)
+	}
+	if path == "" {
+		return logcat.OfflineLogFileResult{}, errors.New("open log file canceled")
+	}
+	return a.LoadOfflineLogFile(path)
+}
+
+func (a *App) LoadOfflineLogFile(path string) (logcat.OfflineLogFileResult, error) {
+	result, err := logcat.LoadOfflineLogFile(path)
+	if err != nil {
+		a.setLastError(err.Error())
+		return logcat.OfflineLogFileResult{}, err
+	}
+
+	_ = a.StopLogcat()
+	a.logStore.Clear()
+	a.parser.Reset()
+	a.clearAnalysisResults()
+
+	entries := make([]logcat.LogEntry, 0, len(result.Entries))
+	for _, entry := range result.Entries {
+		entries = append(entries, a.logStore.Add(entry))
+	}
+	result.Entries = entries
+	result.Count = len(entries)
+	result.AnalysisResults = logcat.AnalyzeEntries(entries)
+	a.storeAnalysisResults(result.AnalysisResults)
+
+	a.mu.Lock()
+	a.logSource = logcat.LogSourceOffline
+	a.offlineFilePath = result.FilePath
+	a.offlineFileName = result.FileName
+	a.offlineParseFailed = result.ParseFailedCount
+	a.lastErr = ""
+	a.mu.Unlock()
+
+	return result, nil
+}
+
+func (a *App) ReturnToLiveMode() error {
+	_ = a.StopLogcat()
+	a.logStore.Clear()
+	a.parser.Reset()
+	a.clearAnalysisResults()
+
+	a.mu.Lock()
+	a.logSource = logcat.LogSourceLive
+	a.offlineFilePath = ""
+	a.offlineFileName = ""
+	a.offlineParseFailed = 0
+	a.lastErr = ""
+	a.mu.Unlock()
+	return nil
 }
 
 func (a *App) SelectProjectDirectory() (string, error) {
@@ -619,9 +739,7 @@ func (a *App) ExportAIContext(resultID string, options ai.AIContextOptions) (str
 func (a *App) ClearLogs() {
 	a.logStore.Clear()
 	a.parser.Reset()
-	a.analysisMu.Lock()
-	a.analysis = map[string]logcat.AnalysisResult{}
-	a.analysisMu.Unlock()
+	a.clearAnalysisResults()
 }
 
 func (a *App) GetLogBatch(afterID int64, limit int) logcat.LogBatch {
@@ -635,14 +753,25 @@ func (a *App) GetLogStatus() logcat.LogStatus {
 	defer a.mu.Unlock()
 
 	return logcat.LogStatus{
-		Running:        a.running,
-		Serial:         a.serial,
-		LastError:      a.lastErr,
-		Count:          count,
-		DiscardedCount: discarded,
-		LastID:         lastID,
-		ADBPath:        a.adbPath,
+		Running:                 a.running,
+		Serial:                  a.serial,
+		LastError:               a.lastErr,
+		Count:                   count,
+		DiscardedCount:          discarded,
+		LastID:                  lastID,
+		ADBPath:                 a.adbPath,
+		Source:                  a.currentLogSourceLocked(),
+		OfflineFilePath:         a.offlineFilePath,
+		OfflineFileName:         a.offlineFileName,
+		OfflineParseFailedCount: a.offlineParseFailed,
 	}
+}
+
+func (a *App) currentLogSourceLocked() string {
+	if strings.TrimSpace(a.logSource) == "" {
+		return logcat.LogSourceLive
+	}
+	return a.logSource
 }
 
 func (a *App) ensureADB(configuredPath string) (string, error) {
@@ -763,6 +892,12 @@ func (a *App) storeAnalysisResults(results []logcat.AnalysisResult) {
 		}
 		a.analysis[result.ID] = result
 	}
+}
+
+func (a *App) clearAnalysisResults() {
+	a.analysisMu.Lock()
+	a.analysis = map[string]logcat.AnalysisResult{}
+	a.analysisMu.Unlock()
 }
 
 func (a *App) updateProjectConfig(update func(workspace.ProjectConfig) workspace.ProjectConfig) {

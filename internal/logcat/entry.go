@@ -21,11 +21,15 @@ type LogBatch struct {
 }
 
 type LogStatus struct {
-	Running        bool   `json:"running"`
-	Serial         string `json:"serial"`
-	LastError      string `json:"lastError,omitempty"`
-	Count          int    `json:"count"`
-	DiscardedCount int64  `json:"discardedCount"`
-	LastID         int64  `json:"lastID"`
-	ADBPath        string `json:"adbPath,omitempty"`
+	Running                 bool   `json:"running"`
+	Serial                  string `json:"serial"`
+	LastError               string `json:"lastError,omitempty"`
+	Count                   int    `json:"count"`
+	DiscardedCount          int64  `json:"discardedCount"`
+	LastID                  int64  `json:"lastID"`
+	ADBPath                 string `json:"adbPath,omitempty"`
+	Source                  string `json:"source"`
+	OfflineFilePath         string `json:"offlineFilePath,omitempty"`
+	OfflineFileName         string `json:"offlineFileName,omitempty"`
+	OfflineParseFailedCount int    `json:"offlineParseFailedCount,omitempty"`
 }

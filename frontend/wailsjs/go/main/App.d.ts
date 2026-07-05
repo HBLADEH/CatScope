@@ -25,6 +25,8 @@ export function ExportAIContext(arg1:string,arg2:ai.AIContextOptions):Promise<st
 
 export function ExportLogs(arg1:Array<logcat.LogEntry>):Promise<string>;
 
+export function ExportLogsJSONL(arg1:Array<logcat.LogEntry>):Promise<string>;
+
 export function FindADB(arg1:string):Promise<string>;
 
 export function FindLatestAPK(arg1:string):Promise<build.APKInfo>;
@@ -55,7 +57,13 @@ export function ListWorkspaces():Promise<Array<workspace.WorkspaceConfig>>;
 
 export function LoadConfig():Promise<workspace.AppConfig>;
 
+export function LoadOfflineLogFile(arg1:string):Promise<logcat.OfflineLogFileResult>;
+
+export function OpenLogFile(arg1:string):Promise<logcat.OfflineLogFileResult>;
+
 export function ResetConfig():Promise<workspace.AppConfig>;
+
+export function ReturnToLiveMode():Promise<void>;
 
 export function SaveConfig(arg1:workspace.AppConfig):Promise<void>;
 

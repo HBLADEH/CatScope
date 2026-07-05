@@ -135,14 +135,14 @@ onUnmounted(() => {
               Start
             </n-button>
 
-            <n-button :disabled="!store.running" @click="store.stop">
+            <n-button :disabled="!store.running || store.isOffline" @click="store.stop">
               <template #icon>
                 <n-icon :component="StopOutline" />
               </template>
               Stop
             </n-button>
 
-            <n-button :disabled="!store.running" @click="store.togglePause">
+            <n-button :disabled="!store.running || store.isOffline" @click="store.togglePause">
               <template #icon>
                 <n-icon :component="PauseOutline" />
               </template>
@@ -160,7 +160,14 @@ onUnmounted(() => {
               <template #icon>
                 <n-icon :component="DownloadOutline" />
               </template>
-              Export
+              Export TXT
+            </n-button>
+
+            <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.exportFilteredJSONL">
+              <template #icon>
+                <n-icon :component="DownloadOutline" />
+              </template>
+              JSONL
             </n-button>
 
             <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
@@ -183,6 +190,40 @@ onUnmounted(() => {
 
           <section class="workspace">
             <aside class="device-panel">
+              <section class="source-panel">
+                <h2>Log Source</h2>
+                <div class="source-mode-row">
+                  <n-tag :type="store.isOffline ? 'warning' : 'success'" size="small">
+                    {{ store.isOffline ? 'Offline Log File' : 'Live Device Logcat' }}
+                  </n-tag>
+                  <n-button v-if="store.isOffline" size="small" tertiary @click="store.returnToLiveMode">
+                    Return to Live Mode
+                  </n-button>
+                </div>
+                <div class="project-path-row">
+                  <n-input
+                    v-model:value="store.offlinePathInput"
+                    placeholder="Path to .txt, .log, or .jsonl"
+                    @keyup.enter="store.openLogFile()"
+                  />
+                  <n-button :loading="store.offlineLoading" tertiary @click="store.openLogFile()">
+                    <template #icon>
+                      <n-icon :component="FolderOpenOutline" />
+                    </template>
+                  </n-button>
+                </div>
+                <dl v-if="store.isOffline" class="source-summary">
+                  <dt>File</dt>
+                  <dd>{{ store.status.offlineFileName || '-' }}</dd>
+                  <dt>Path</dt>
+                  <dd>{{ store.status.offlineFilePath || '-' }}</dd>
+                  <dt>Entries</dt>
+                  <dd>{{ store.status.count }}</dd>
+                  <dt>Raw Lines</dt>
+                  <dd>{{ store.status.offlineParseFailedCount || 0 }}</dd>
+                </dl>
+              </section>
+
               <section class="project-panel">
                 <h2>Workspace</h2>
                 <n-select
@@ -378,6 +419,7 @@ onUnmounted(() => {
 
           <footer class="statusbar">
             <span>Device: {{ store.selectedSerial || 'none' }}</span>
+            <span>Source: {{ store.isOffline ? 'offline' : 'live' }}</span>
             <span>Visible: {{ store.filteredLogs.length }}</span>
             <span>Package: {{ store.selectedPackage || 'all' }}</span>
             <span>PID: {{ store.currentPIDs.length ? store.currentPIDs.join(',') : 'none' }}</span>

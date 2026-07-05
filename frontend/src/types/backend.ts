@@ -42,6 +42,19 @@ export interface LogStatus {
   discardedCount: number
   lastID: number
   adbPath?: string
+  source?: 'live' | 'offline'
+  offlineFilePath?: string
+  offlineFileName?: string
+  offlineParseFailedCount?: number
+}
+
+export interface OfflineLogFileResult {
+  filePath: string
+  fileName: string
+  entries: LogEntry[]
+  count: number
+  parseFailedCount: number
+  analysisResults?: AnalysisResult[]
 }
 
 export interface PackagePIDState {

@@ -350,6 +350,10 @@ export namespace logcat {
 	    discardedCount: number;
 	    lastID: number;
 	    adbPath?: string;
+	    source: string;
+	    offlineFilePath?: string;
+	    offlineFileName?: string;
+	    offlineParseFailedCount?: number;
 
 	    static createFrom(source: any = {}) {
 	        return new LogStatus(source);
@@ -364,7 +368,51 @@ export namespace logcat {
 	        this.discardedCount = source["discardedCount"];
 	        this.lastID = source["lastID"];
 	        this.adbPath = source["adbPath"];
+	        this.source = source["source"];
+	        this.offlineFilePath = source["offlineFilePath"];
+	        this.offlineFileName = source["offlineFileName"];
+	        this.offlineParseFailedCount = source["offlineParseFailedCount"];
 	    }
+	}
+	export class OfflineLogFileResult {
+	    filePath: string;
+	    fileName: string;
+	    entries: LogEntry[];
+	    count: number;
+	    parseFailedCount: number;
+	    analysisResults?: AnalysisResult[];
+
+	    static createFrom(source: any = {}) {
+	        return new OfflineLogFileResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.fileName = source["fileName"];
+	        this.entries = this.convertValues(source["entries"], LogEntry);
+	        this.count = source["count"];
+	        this.parseFailedCount = source["parseFailedCount"];
+	        this.analysisResults = this.convertValues(source["analysisResults"], AnalysisResult);
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class PackagePIDState {
 	    packageName: string;
