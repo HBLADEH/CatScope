@@ -1,15 +1,20 @@
-# CatScope
+<p align="center">
+  <img src="./docs/assets/logo.png" alt="CatScope Logo" width="160" />
+</p>
+
+<h1 align="center">CatScope</h1>
 
 <p align="center">
-  <img src="./Logo.png" alt="CatScope Logo" width="160" />
+  <strong>Lightweight Android Logcat Workbench.</strong>
 </p>
 
 <p align="center">
-  <strong>Logcat without Android Studio.</strong>
+  Package-aware filtering, Crash Analyzer, AI Context Generator, Offline Log Viewer, and Session restore without opening Android Studio.
 </p>
 
 <p align="center">
-  A lightweight Android debugging workbench for logs, crashes, installs, launches, and daily troubleshooting.
+  <img src="https://img.shields.io/badge/status-v0.6.0--preview-blue" alt="Preview status" />
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Platform: Windows" />
 </p>
 
 <p align="center">
@@ -19,6 +24,7 @@
 <p align="center">
   <a href="#why-catscope">Why CatScope</a> ·
   <a href="#features">Features</a> ·
+  <a href="#screenshots">Screenshots</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#roadmap">Roadmap</a> ·
   <a href="#documentation">Documentation</a>
@@ -29,6 +35,15 @@ CatScope is a lightweight desktop workbench for Android Logcat. It is built for 
 > Better than raw `adb logcat`, lighter than Android Studio, and more Android-aware than a generic log viewer.
 
 CatScope is not trying to replace Android Studio. The core idea is **Logcat without Android Studio**, then carefully add the nearby workflows that make daily Android troubleshooting smoother: build, install, launch, crash analysis, export, and AI-friendly context generation.
+
+Highlights:
+
+- **Lightweight Android Logcat Workbench** for focused Android troubleshooting.
+- **Package-aware filtering** with package selection, PID tracking, level filters, tags, keywords, exclusions, and regex search.
+- **Crash Analyzer** for Java crashes, ANR, native crashes, JNI errors, and install failures.
+- **AI Context Generator** that creates local Markdown without calling external AI APIs.
+- **Offline Log Viewer** for `.txt`, `.log`, and CatScope `.jsonl` exports.
+- **Session restore** through `.catscope-session` files.
 
 ## Why CatScope
 
@@ -257,6 +272,8 @@ CatScope/
 ├─ frontend/          # Vue 3 + TypeScript frontend
 ├─ internal/          # Go backend packages
 ├─ docs/              # Architecture, roadmap and development notes
+├─ docs/assets/       # README and release presentation assets
+├─ docs/screenshots/  # Real screenshots when available
 ├─ app.go             # Wails app bindings
 ├─ main.go            # Application entry point
 ├─ wails.json         # Wails project config
@@ -267,6 +284,24 @@ CatScope/
 └─ README.zh-CN.md
 ```
 
+## Screenshots
+
+### Live Logcat
+
+<p align="center">
+  <img src="./docs/screenshots/live-logcat.png" alt="CatScope Live Logcat screenshot" />
+</p>
+
+### Analysis and Build Workflow
+
+| Analysis Tab | Build / Install / Launch |
+| --- | --- |
+| <img src="./docs/screenshots/analysis-tab.png" alt="CatScope Analysis tab screenshot" width="360" /> | <img src="./docs/screenshots/build-install-launch.png" alt="CatScope Build Install Launch screenshot" width="360" /> |
+
+More screenshots will be added as the preview release set is finalized. Planned coverage still includes AI Context, Offline Log, Session, and Workspace Presets.
+
+See [docs/screenshots/README.md](./docs/screenshots/README.md) for screenshot naming and capture notes.
+
 ## Documentation
 
 - [Roadmap](./docs/ROADMAP.md)
@@ -275,7 +310,9 @@ CatScope/
 - [Manual QA Checklist](./docs/QA_CHECKLIST.md)
 - [Known Issues](./docs/KNOWN_ISSUES.md)
 - [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
-- [Screenshots Placeholder](./docs/screenshots/README.md)
+- [Release Assets](./docs/RELEASE_ASSETS.md)
+- [Demo Recording Guide](./docs/DEMO.md)
+- [Screenshots](./docs/screenshots/README.md)
 - [MVP Tasks](./docs/MVP_TASKS.md)
 - [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
 

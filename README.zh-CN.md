@@ -1,15 +1,20 @@
-# CatScope
+<p align="center">
+  <img src="./docs/assets/logo.png" alt="CatScope Logo" width="160" />
+</p>
+
+<h1 align="center">CatScope</h1>
 
 <p align="center">
-  <img src="./Logo.png" alt="CatScope Logo" width="160" />
+  <strong>Lightweight Android Logcat Workbench.</strong>
 </p>
 
 <p align="center">
-  <strong>Logcat without Android Studio.</strong>
+  一个支持按包过滤、Crash Analyzer、AI Context Generator、离线日志查看和 Session 恢复的轻量级 Android Logcat 工作台。
 </p>
 
 <p align="center">
-  一个围绕日志、崩溃、安装、启动和日常排障构建的轻量级 Android 调试工作台。
+  <img src="https://img.shields.io/badge/status-v0.6.0--preview-blue" alt="Preview status" />
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Platform: Windows" />
 </p>
 
 <p align="center">
@@ -19,6 +24,7 @@
 <p align="center">
   <a href="#为什么做-catscope">为什么做 CatScope</a> ·
   <a href="#功能">功能</a> ·
+  <a href="#截图">截图</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#路线图">路线图</a> ·
   <a href="#文档">文档</a>
@@ -29,6 +35,15 @@ CatScope 是一个脱离 Android Studio 的轻量级 Android Logcat 调试工作
 > 比 `adb logcat` 好用，比 Android Studio 更轻量，比普通日志查看器更懂 Android。
 
 CatScope 不打算替代 Android Studio。它的核心思想是 **Logcat without Android Studio**，然后在这个基础上谨慎加入最贴近日常排障的能力：构建、安装、启动、崩溃分析、日志导出，以及适合 AI 辅助分析的上下文生成。
+
+核心亮点：
+
+- **Lightweight Android Logcat Workbench**，专注 Android 日常排障。
+- **Package-aware filtering**，支持 package 选择、PID 追踪、level、tag、关键词、排除词和 regex 过滤。
+- **Crash Analyzer**，覆盖 Java crash、ANR、native crash、JNI error 和安装失败。
+- **AI Context Generator**，在本地生成 Markdown，不调用外部 AI API。
+- **Offline Log Viewer**，支持 `.txt`、`.log` 和 CatScope `.jsonl` 导出文件。
+- **Session restore**，通过 `.catscope-session` 恢复调试现场。
 
 ## 为什么做 CatScope
 
@@ -257,6 +272,8 @@ CatScope/
 ├─ frontend/          # Vue 3 + TypeScript frontend
 ├─ internal/          # Go backend packages
 ├─ docs/              # Architecture, roadmap and development notes
+├─ docs/assets/       # README and release presentation assets
+├─ docs/screenshots/  # Real screenshots when available
 ├─ app.go             # Wails app bindings
 ├─ main.go            # Application entry point
 ├─ wails.json         # Wails project config
@@ -267,6 +284,24 @@ CatScope/
 └─ README.zh-CN.md
 ```
 
+## 截图
+
+### Live Logcat
+
+<p align="center">
+  <img src="./docs/screenshots/live-logcat.png" alt="CatScope Live Logcat screenshot" />
+</p>
+
+### Analysis 与 Build 工作流
+
+| Analysis Tab | Build / Install / Launch |
+| --- | --- |
+| <img src="./docs/screenshots/analysis-tab.png" alt="CatScope Analysis tab screenshot" width="360" /> | <img src="./docs/screenshots/build-install-launch.png" alt="CatScope Build Install Launch screenshot" width="360" /> |
+
+随着 preview release 素材继续完善，后续还会补充 AI Context、Offline Log、Session 和 Workspace Presets 截图。
+
+截图命名和录制说明见 [docs/screenshots/README.md](./docs/screenshots/README.md)。
+
 ## 文档
 
 - [Roadmap](./docs/ROADMAP.md)
@@ -275,7 +310,9 @@ CatScope/
 - [手工 QA 检查清单](./docs/QA_CHECKLIST.zh-CN.md)
 - [Known Issues](./docs/KNOWN_ISSUES.md)
 - [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
-- [Screenshots Placeholder](./docs/screenshots/README.md)
+- [Release Assets](./docs/RELEASE_ASSETS.md)
+- [Demo Recording Guide](./docs/DEMO.md)
+- [Screenshots](./docs/screenshots/README.md)
 - [MVP Tasks](./docs/MVP_TASKS.md)
 - [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
 
