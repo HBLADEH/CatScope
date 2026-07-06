@@ -272,11 +272,26 @@ CatScope/
 - [Roadmap](./docs/ROADMAP.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [用户指南](./docs/USER_GUIDE.zh-CN.md)
+- [手工 QA 检查清单](./docs/QA_CHECKLIST.zh-CN.md)
 - [Known Issues](./docs/KNOWN_ISSUES.md)
 - [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
 - [Screenshots Placeholder](./docs/screenshots/README.md)
 - [MVP Tasks](./docs/MVP_TASKS.md)
 - [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
+
+## 反馈与 Bug 报告
+
+报告可复现问题时，请优先使用 GitHub bug report 模板。一份有效报告建议包含：
+
+- OS 和 CatScope version。
+- Android device 型号、Android version，以及是真机还是模拟器。
+- `adb version` 输出，以及 adb 是通过 `PATH`、`ANDROID_HOME`、`ANDROID_SDK_ROOT` 还是 CatScope 配置找到的。
+- 清晰的复现步骤、期望行为和实际行为。
+- 有助于说明问题的脱敏日志、截图或录屏。
+
+如果问题和 Analyzer 或 AI Context 有关，建议附上导出的 AI Context Markdown。AI Context 在本地生成，可能包含 package name、stack trace、设备信息和日志片段，公开提交前请先检查并脱敏。
+
+如果问题和状态恢复、过滤条件、workspace 或 session 有关，建议在可行时附上脱敏后的 `.catscope-session` 文件。Session 文件是本地 JSON 调试现场文件，可能包含日志、过滤条件、Analysis 结果、workspace 信息、notes 和 AI Context options。
 
 ## 贡献
 

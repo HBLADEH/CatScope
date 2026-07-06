@@ -1,0 +1,45 @@
+name: Feature request
+description: Suggest a focused improvement for CatScope
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        CatScope is intentionally scoped as a lightweight Logcat troubleshooting workbench. Full IDE features, Gradle Project Sync, and external AI API integrations are outside the current preview scope.
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What workflow or problem would this improve?
+      placeholder: When debugging ..., I need to ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you want CatScope to support.
+      placeholder: CatScope could ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What workarounds or other designs have you considered?
+      placeholder: Today I use ...
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this workflow to you?
+      options:
+        - Nice to have
+        - Important
+        - Blocking daily use
+    validations:
+      required: true

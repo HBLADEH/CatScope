@@ -272,11 +272,26 @@ CatScope/
 - [Roadmap](./docs/ROADMAP.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [User Guide](./docs/USER_GUIDE.md)
+- [Manual QA Checklist](./docs/QA_CHECKLIST.md)
 - [Known Issues](./docs/KNOWN_ISSUES.md)
 - [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
 - [Screenshots Placeholder](./docs/screenshots/README.md)
 - [MVP Tasks](./docs/MVP_TASKS.md)
 - [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
+
+## Feedback and Bug Reports
+
+Please use the GitHub bug report template when reporting reproducible issues. A good report includes:
+
+- OS and CatScope version.
+- Android device model, Android version, and whether it is a physical device or emulator.
+- `adb version` output and how adb is discovered, such as `PATH`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or CatScope configuration.
+- Clear reproduction steps, expected behavior, and actual behavior.
+- Sanitized exported logs, screenshots, or recordings when they help explain the issue.
+
+For Analyzer or AI Context issues, attach the exported AI Context Markdown if possible. AI Context is generated locally and may include package names, stack traces, device metadata, and log excerpts, so review or redact it before posting publicly.
+
+For state restoration, filtering, workspace, or session-specific bugs, attach a sanitized `.catscope-session` file when you can. Session files are local JSON debugging-state files and may include logs, filters, Analysis results, workspace metadata, notes, and AI Context options.
 
 ## Contributing
 

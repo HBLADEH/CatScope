@@ -1,0 +1,107 @@
+name: Bug report
+description: Report a reproducible CatScope problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve CatScope. Please remove sensitive device data, package names, tokens, and private logs before attaching files.
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: Example: Windows 11 23H2
+      placeholder: Windows 11 23H2
+    validations:
+      required: true
+  - type: input
+    id: catscope-version
+    attributes:
+      label: CatScope version
+      description: Example: v0.6.0-preview, commit hash, or release filename
+      placeholder: v0.6.0-preview
+    validations:
+      required: true
+  - type: input
+    id: android-device
+    attributes:
+      label: Android device
+      description: Device model, emulator name, ROM, or manufacturer if relevant
+      placeholder: Pixel 7 / Android Emulator / Samsung Galaxy ...
+    validations:
+      required: true
+  - type: input
+    id: android-version
+    attributes:
+      label: Android version
+      description: Include API level when available.
+      placeholder: Android 14, API 34
+    validations:
+      required: true
+  - type: input
+    id: adb-version
+    attributes:
+      label: adb version
+      description: Paste the output of `adb version` if possible.
+      placeholder: Android Debug Bridge version ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction steps
+      description: Tell us exactly how to reproduce the issue.
+      placeholder: |
+        1. Open CatScope.
+        2. Select device ...
+        3. Start Live Logcat ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      placeholder: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      placeholder: What happened instead? Include visible errors or toast messages.
+    validations:
+      required: true
+  - type: textarea
+    id: logs-ai-context
+    attributes:
+      label: Logs / AI Context
+      description: Paste a small sanitized excerpt, or attach exported logs / AI Context Markdown if helpful.
+      placeholder: Paste sanitized logs or AI Context Markdown here.
+    validations:
+      required: false
+  - type: textarea
+    id: session-file
+    attributes:
+      label: Session file
+      description: Attach a sanitized `.catscope-session` file when the issue depends on restored state.
+      placeholder: Drag and drop the sanitized session file here, or explain why it cannot be shared.
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag and drop screenshots or short recordings for UI issues.
+      placeholder: Attach screenshots here.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-check
+    attributes:
+      label: Privacy check
+      options:
+        - label: I have removed or reviewed sensitive logs, package names, tokens, user data, and internal business information.
+          required: true
