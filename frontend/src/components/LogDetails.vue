@@ -1,11 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { NButton, NTag, useMessage } from 'naive-ui'
 
 import { useLogStore } from '@/stores/logs'
 
+const props = withDefaults(defineProps<{
+  defaultTab?: 'details' | 'analysis'
+}>(), {
+  defaultTab: 'details'
+})
+
 const store = useLogStore()
 const message = useMessage()
+const activeTab = ref<'details' | 'analysis'>(props.defaultTab)
+
+watch(
+  () => props.defaultTab,
+  (tab) => {
+    activeTab.value = tab
+  }
+)
 
 const fullText = computed(() => {
   const entry = store.selectedLog
@@ -46,7 +60,7 @@ function severityTagType(severity: string) {
 
 <template>
   <aside class="details-panel">
-    <n-tabs type="line" animated>
+    <n-tabs v-model:value="activeTab" type="line" animated>
       <n-tab-pane name="details" tab="Details">
         <template v-if="store.selectedLog">
           <dl>

@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
-import { darkTheme, NIcon, type SelectOption } from 'naive-ui'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { darkTheme, NIcon, type DropdownOption, type SelectOption } from 'naive-ui'
 import {
   AnalyticsOutline,
+  ChevronBackOutline,
+  ChevronDownOutline,
+  ChevronForwardOutline,
+  CloseOutline,
   DownloadOutline,
   FolderOpenOutline,
   HammerOutline,
@@ -19,6 +23,28 @@ import LogTable from '@/components/LogTable.vue'
 import { useLogStore } from '@/stores/logs'
 
 const store = useLogStore()
+const sidebarCollapsed = ref(false)
+const detailsPanelOpen = ref(false)
+const detailsPanelTab = ref<'details' | 'analysis'>('details')
+const allLogLevels = ['V', 'D', 'I', 'W', 'E', 'F']
+type ThemeMode = 'system' | 'light' | 'dark'
+
+function readThemeMode(): ThemeMode {
+  const value = localStorage.getItem('catscope.themeMode')
+  return value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
+}
+
+const themeMode = ref<ThemeMode>(readThemeMode())
+const systemPrefersDark = ref(window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true)
+
+const activeThemeName = computed(() => {
+  if (themeMode.value === 'system') {
+    return systemPrefersDark.value ? 'dark' : 'light'
+  }
+  return themeMode.value
+})
+
+const naiveTheme = computed(() => (activeThemeName.value === 'dark' ? darkTheme : null))
 
 const deviceOptions = computed<SelectOption[]>(() =>
   store.devices.map((device) => ({
@@ -33,11 +59,6 @@ const deviceOptions = computed<SelectOption[]>(() =>
   }))
 )
 
-const levelOptions: SelectOption[] = ['V', 'D', 'I', 'W', 'E', 'F'].map((level) => ({
-  label: level,
-  value: level
-}))
-
 const packageOptions = computed<SelectOption[]>(() =>
   store.packages.map((item) => ({
     label: item.label ? `${item.label} (${item.packageName})` : item.packageName,
@@ -49,6 +70,29 @@ const packageModeOptions: SelectOption[] = [
   { label: '3rd party', value: 'thirdParty' },
   { label: 'All packages', value: 'all' }
 ]
+
+const themeOptions: SelectOption[] = [
+  { label: 'System', value: 'system' },
+  { label: 'Light', value: 'light' },
+  { label: 'Dark', value: 'dark' }
+]
+
+const exportOptions: DropdownOption[] = [
+  { label: 'Export TXT', key: 'txt' },
+  { label: 'Export JSONL', key: 'jsonl' }
+]
+
+const allLevelsSelected = computed(() => store.levels.length === allLogLevels.length)
+
+const levelSummary = computed(() => {
+  if (store.levels.length === allLogLevels.length) {
+    return 'All Levels'
+  }
+  if (store.levels.length === 0) {
+    return 'No Levels'
+  }
+  return `Levels: ${allLogLevels.filter((level) => store.levels.includes(level)).join(' ')}`
+})
 
 const sourceLabel = computed(() => {
   if (store.isSession) {
@@ -90,127 +134,256 @@ function handlePresetChange(value: string | number | null) {
   void store.applyPreset(value)
 }
 
+function handleExportSelect(key: string | number) {
+  if (key === 'jsonl') {
+    void store.exportFilteredJSONL()
+    return
+  }
+  void store.exportFiltered()
+}
+
+function setAllLevels() {
+  store.levels = [...allLogLevels]
+}
+
+function clearLevels() {
+  store.levels = []
+}
+
+function toggleLevel(level: string, checked: boolean) {
+  if (checked && !store.levels.includes(level)) {
+    store.levels = [...store.levels, level]
+    return
+  }
+  if (!checked) {
+    store.levels = store.levels.filter((item) => item !== level)
+  }
+}
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+function setThemeMode(mode: ThemeMode) {
+  themeMode.value = mode
+}
+
+function handleThemeModeChange(value: string | number | null) {
+  if (value === 'light' || value === 'dark' || value === 'system') {
+    setThemeMode(value)
+  }
+}
+
+function openDetailsPanel(tab: 'details' | 'analysis' = 'details') {
+  detailsPanelTab.value = tab
+  detailsPanelOpen.value = true
+}
+
+function closeDetailsPanel() {
+  detailsPanelOpen.value = false
+}
+
+function handleSystemThemeChange(event: MediaQueryListEvent) {
+  systemPrefersDark.value = event.matches
+}
+
+watch(
+  themeMode,
+  (mode) => {
+    localStorage.setItem('catscope.themeMode', mode)
+  },
+  { immediate: true }
+)
+
+watch(
+  activeThemeName,
+  (theme) => {
+    document.documentElement.dataset.theme = theme
+  },
+  { immediate: true }
+)
+
+watch(
+  () => store.selectedLog?.id,
+  (id) => {
+    if (id !== undefined) {
+      openDetailsPanel('details')
+    }
+  }
+)
+
 onMounted(() => {
+  const media = window.matchMedia?.('(prefers-color-scheme: dark)')
+  if (media) {
+    systemPrefersDark.value = media.matches
+    media.addEventListener('change', handleSystemThemeChange)
+  }
   void store.loadConfig()
   void store.refreshDevices()
 })
 
 onUnmounted(() => {
+  window.matchMedia?.('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemThemeChange)
   store.stopPolling()
 })
 </script>
 
 <template>
-  <n-config-provider :theme="darkTheme">
+  <n-config-provider :theme="naiveTheme">
     <n-dialog-provider>
       <n-message-provider>
         <main class="app-shell">
           <header class="toolbar">
             <div class="brand">
               <div class="brand-mark">C</div>
-              <div>
-                <h1>CatScope</h1>
-                <span>Android Logcat Workbench</span>
-              </div>
+              <h1>CatScope</h1>
             </div>
 
-            <n-select
-              :value="store.selectedSerial"
-              class="device-select"
-              :options="deviceOptions"
-              :loading="store.loading"
-              placeholder="No Android device"
-              @update:value="handleDeviceChange"
-            />
+            <div class="toolbar-controls">
+              <div class="toolbar-device-group">
+                <n-select
+                  :value="store.selectedSerial"
+                  class="device-select"
+                  :options="deviceOptions"
+                  :loading="store.loading"
+                  placeholder="No Android device"
+                  @update:value="handleDeviceChange"
+                />
 
-            <n-select
-              :value="store.packageMode"
-              class="package-mode-select"
-              :options="packageModeOptions"
-              :disabled="!store.canSelectPackage"
-              @update:value="handlePackageModeChange"
-            />
+                <n-select
+                  :value="store.packageMode"
+                  class="package-mode-select"
+                  :options="packageModeOptions"
+                  :disabled="!store.canSelectPackage"
+                  @update:value="handlePackageModeChange"
+                />
 
-            <n-select
-              :value="store.selectedPackage || null"
-              class="package-select"
-              :options="packageOptions"
-              :loading="store.packageLoading"
-              :disabled="!store.canSelectPackage"
-              clearable
-              filterable
-              placeholder="All packages"
-              @update:value="handlePackageChange"
-            />
+                <n-select
+                  :value="store.selectedPackage || null"
+                  class="package-select"
+                  :options="packageOptions"
+                  :loading="store.packageLoading"
+                  :disabled="!store.canSelectPackage"
+                  clearable
+                  filterable
+                  placeholder="All packages"
+                  @update:value="handlePackageChange"
+                />
 
-            <n-button :loading="store.loading" tertiary @click="store.refreshDevices">
-              <template #icon>
-                <n-icon :component="RefreshOutline" />
-              </template>
-            </n-button>
+                <n-button :loading="store.loading" tertiary @click="store.refreshDevices">
+                  <template #icon>
+                    <n-icon :component="RefreshOutline" />
+                  </template>
+                </n-button>
+              </div>
 
-            <n-button type="primary" :disabled="!store.canStart" @click="store.start">
-              <template #icon>
-                <n-icon :component="PlayOutline" />
-              </template>
-              Start
-            </n-button>
+              <div class="toolbar-action-group">
+                <n-button type="primary" :disabled="!store.canStart" @click="store.start">
+                  <template #icon>
+                    <n-icon :component="PlayOutline" />
+                  </template>
+                  Start
+                </n-button>
 
-            <n-button :disabled="!store.running || store.isStaticSource" @click="store.stop">
-              <template #icon>
-                <n-icon :component="StopOutline" />
-              </template>
-              Stop
-            </n-button>
+                <n-button :disabled="!store.running || store.isStaticSource" @click="store.stop">
+                  <template #icon>
+                    <n-icon :component="StopOutline" />
+                  </template>
+                  Stop
+                </n-button>
 
-            <n-button :disabled="!store.running || store.isStaticSource" @click="store.togglePause">
-              <template #icon>
-                <n-icon :component="PauseOutline" />
-              </template>
-              {{ store.paused ? 'Resume' : 'Pause' }}
-            </n-button>
+                <n-button class="pause-button" :disabled="!store.running || store.isStaticSource" @click="store.togglePause">
+                  <template #icon>
+                    <n-icon :component="PauseOutline" />
+                  </template>
+                  {{ store.paused ? 'Resume' : 'Pause' }}
+                </n-button>
 
-            <n-button tertiary @click="store.clear">
-              <template #icon>
-                <n-icon :component="TrashOutline" />
-              </template>
-              Clear
-            </n-button>
+                <n-input v-model:value="store.search" class="toolbar-search" clearable placeholder="Search log text" />
 
-            <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.exportFiltered">
-              <template #icon>
-                <n-icon :component="DownloadOutline" />
-              </template>
-              Export TXT
-            </n-button>
+                <n-popover trigger="click" placement="bottom-end" raw>
+                  <template #trigger>
+                    <n-button class="level-filter-button">
+                      <span>{{ levelSummary }}</span>
+                      <n-icon class="level-filter-caret" :component="ChevronDownOutline" />
+                    </n-button>
+                  </template>
 
-            <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.exportFilteredJSONL">
-              <template #icon>
-                <n-icon :component="DownloadOutline" />
-              </template>
-              JSONL
-            </n-button>
+                  <div class="level-filter-popover">
+                    <div class="level-filter-actions">
+                      <n-button size="tiny" tertiary :disabled="allLevelsSelected" @click="setAllLevels">
+                        All
+                      </n-button>
+                      <n-button size="tiny" tertiary :disabled="store.levels.length === 0" @click="clearLevels">
+                        None
+                      </n-button>
+                    </div>
+                    <div class="level-filter-grid">
+                      <n-checkbox
+                        v-for="level in allLogLevels"
+                        :key="level"
+                        :checked="store.levels.includes(level)"
+                        @update:checked="(checked: boolean) => toggleLevel(level, checked)"
+                      >
+                        <span :class="`level level-${level}`">{{ level }}</span>
+                      </n-checkbox>
+                    </div>
+                  </div>
+                </n-popover>
 
-            <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
-              <template #icon>
-                <n-icon :component="AnalyticsOutline" />
-              </template>
-              Analyze
-            </n-button>
+                <n-button tertiary @click="store.clear">
+                  <template #icon>
+                    <n-icon :component="TrashOutline" />
+                  </template>
+                  Clear
+                </n-button>
 
-            <n-input v-model:value="store.search" clearable placeholder="Search log text" />
+                <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
+                  <template #icon>
+                    <n-icon :component="AnalyticsOutline" />
+                  </template>
+                  Analyze
+                </n-button>
 
-            <n-select
-              v-model:value="store.levels"
-              class="level-select"
-              multiple
-              :options="levelOptions"
-              placeholder="Level"
-            />
+                <n-dropdown
+                  trigger="click"
+                  :options="exportOptions"
+                  :disabled="store.filteredLogs.length === 0"
+                  @select="handleExportSelect"
+                >
+                  <n-button class="export-button" tertiary :disabled="store.filteredLogs.length === 0">
+                    <template #icon>
+                      <n-icon :component="DownloadOutline" />
+                    </template>
+                    Export
+                  </n-button>
+                </n-dropdown>
+              </div>
+            </div>
           </header>
 
-          <section class="workspace">
+          <section class="workspace" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
             <aside class="device-panel">
+              <div class="sidebar-panel-bar">
+                <span v-if="!sidebarCollapsed">Controls</span>
+                <n-button tertiary circle :title="sidebarCollapsed ? '展开左侧栏' : '收起左侧栏'" @click="toggleSidebar">
+                  <template #icon>
+                    <n-icon :component="sidebarCollapsed ? ChevronForwardOutline : ChevronBackOutline" />
+                  </template>
+                </n-button>
+              </div>
+
+              <template v-if="!sidebarCollapsed">
+              <section class="sidebar-settings-panel">
+                <h2>Appearance</h2>
+                <n-select
+                  :value="themeMode"
+                  :options="themeOptions"
+                  size="small"
+                  @update:value="handleThemeModeChange"
+                />
+              </section>
+
               <section class="source-panel">
                 <h2>Log Source</h2>
                 <div class="source-mode-row">
@@ -510,25 +683,58 @@ onUnmounted(() => {
               <n-alert v-if="store.packageHint" class="device-alert" type="info" :show-icon="false">
                 {{ store.packageHint }}
               </n-alert>
+              </template>
+              <div v-else class="sidebar-collapsed-rail">
+                <span title="Log Source">SRC</span>
+                <span title="Workspace">WK</span>
+                <span title="Filter Preset">FLT</span>
+              </div>
             </aside>
 
             <LogTable />
 
-            <LogDetails />
+            <transition name="details-slide">
+              <aside v-if="detailsPanelOpen" class="details-drawer">
+                <div class="details-drawer-header">
+                  <strong>{{ detailsPanelTab === 'analysis' ? 'Analysis' : 'Log Details' }}</strong>
+                  <n-button tertiary circle size="small" title="关闭右侧栏" @click="closeDetailsPanel">
+                    <template #icon>
+                      <n-icon :component="CloseOutline" />
+                    </template>
+                  </n-button>
+                </div>
+                <LogDetails :default-tab="detailsPanelTab" />
+              </aside>
+            </transition>
           </section>
 
           <footer class="statusbar">
-            <span>Device: {{ store.selectedSerial || 'none' }}</span>
-            <span>Source: {{ store.logSource }}</span>
-            <span>Visible: {{ store.filteredLogs.length }}</span>
-            <span>Package: {{ store.selectedPackage || 'all' }}</span>
-            <span>PID: {{ store.currentPIDs.length ? store.currentPIDs.join(',') : 'none' }}</span>
-            <span>Issues: {{ store.analysisResults.length }}</span>
-            <span>Buffered: {{ store.status.count }}</span>
-            <span>Dropped: {{ store.status.discardedCount }}</span>
-            <span>Status: {{ store.running ? (store.paused ? 'paused' : 'streaming') : 'stopped' }}</span>
-            <span v-if="store.error" class="status-error">{{ store.error }}</span>
-            <span v-else-if="store.notice" class="status-notice">{{ store.notice }}</span>
+            <div class="statusbar-info">
+              <span>Device: {{ store.selectedSerial || 'none' }}</span>
+              <span>Source: {{ store.logSource }}</span>
+              <span>Visible: {{ store.filteredLogs.length }}</span>
+              <span>Package: {{ store.selectedPackage || 'all' }}</span>
+              <span>PID: {{ store.currentPIDs.length ? store.currentPIDs.join(',') : 'none' }}</span>
+              <span>Issues: {{ store.analysisResults.length }}</span>
+              <span>Buffered: {{ store.status.count }}</span>
+              <span>Dropped: {{ store.status.discardedCount }}</span>
+              <span>Status: {{ store.running ? (store.paused ? 'paused' : 'streaming') : 'stopped' }}</span>
+              <span v-if="store.error" class="status-error">{{ store.error }}</span>
+              <span v-else-if="store.notice" class="status-notice">{{ store.notice }}</span>
+            </div>
+            <n-button
+              class="details-toggle-button"
+              size="small"
+              tertiary
+              :type="detailsPanelOpen ? 'primary' : 'default'"
+              title="打开右侧分析栏"
+              @click="openDetailsPanel('analysis')"
+            >
+              <template #icon>
+                <n-icon :component="AnalyticsOutline" />
+              </template>
+              Details / Analysis
+            </n-button>
           </footer>
 
           <n-drawer v-model:show="store.presetManagerOpen" :width="360" placement="right">
