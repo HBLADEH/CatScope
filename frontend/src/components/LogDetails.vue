@@ -2,6 +2,14 @@
 import { computed, ref, watch } from 'vue'
 import { NButton, NTag, useMessage } from 'naive-ui'
 
+import {
+  analysisSuggestions,
+  analysisSummary,
+  analysisTitle,
+  analysisTypeLabel,
+  severityLabel,
+  t
+} from '@/i18n'
 import { useLogStore } from '@/stores/logs'
 
 const props = withDefaults(defineProps<{
@@ -32,7 +40,7 @@ const fullText = computed(() => {
 async function copyAIContext(resultID?: string) {
   try {
     await store.copyAIContext(resultID)
-    message.success('AI Context copied to clipboard.')
+    message.success(t('analysis.copied'))
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   }
@@ -41,7 +49,7 @@ async function copyAIContext(resultID?: string) {
 async function exportAIContext(resultID?: string) {
   try {
     const path = await store.exportAIContext(resultID)
-    message.success(`AI Context exported to ${path}`)
+    message.success(t('analysis.exported', { path }))
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   }
@@ -61,53 +69,53 @@ function severityTagType(severity: string) {
 <template>
   <aside class="details-panel">
     <n-tabs v-model:value="activeTab" type="line" animated>
-      <n-tab-pane name="details" tab="Details">
+      <n-tab-pane name="details" :tab="t('details.title')">
         <template v-if="store.selectedLog">
           <dl>
-            <dt>ID</dt>
+            <dt>{{ t('details.id') }}</dt>
             <dd>{{ store.selectedLog.id }}</dd>
-            <dt>Time</dt>
+            <dt>{{ t('details.time') }}</dt>
             <dd>{{ store.selectedLog.timestamp || '-' }}</dd>
-            <dt>Level</dt>
+            <dt>{{ t('details.level') }}</dt>
             <dd>{{ store.selectedLog.level || '-' }}</dd>
             <dt>PID / TID</dt>
             <dd>{{ store.selectedLog.pid || '-' }} / {{ store.selectedLog.tid || '-' }}</dd>
-            <dt>Package</dt>
+            <dt>{{ t('details.package') }}</dt>
             <dd>{{ store.selectedLog.packageName || '-' }}</dd>
-            <dt>Tag</dt>
+            <dt>{{ t('details.tag') }}</dt>
             <dd>{{ store.selectedLog.tag || '-' }}</dd>
-            <dt>Message</dt>
+            <dt>{{ t('details.message') }}</dt>
             <dd>{{ store.selectedLog.message || '-' }}</dd>
-            <dt>Raw</dt>
+            <dt>{{ t('details.raw') }}</dt>
             <dd>{{ store.selectedLog.raw || '-' }}</dd>
-            <dt>Lines</dt>
+            <dt>{{ t('details.lines') }}</dt>
             <dd>{{ 1 + (store.selectedLog.multiline?.length ?? 0) }}</dd>
           </dl>
           <section class="multiline-block">
-            <h3>Multiline</h3>
+            <h3>{{ t('details.multiline') }}</h3>
             <pre>{{ store.selectedLog.multiline?.join('\n') || '-' }}</pre>
           </section>
-          <h3>Full Raw</h3>
+          <h3>{{ t('details.fullRaw') }}</h3>
           <pre>{{ fullText }}</pre>
         </template>
-        <p v-else class="empty-copy">Select a log row to inspect the full entry.</p>
+        <p v-else class="empty-copy">{{ t('details.selectLog') }}</p>
       </n-tab-pane>
 
-      <n-tab-pane name="analysis" tab="Analysis">
+      <n-tab-pane name="analysis" :tab="t('details.analysisTitle')">
         <div class="analysis-toolbar">
-          <span>{{ store.analysisResults.length }} issue(s)</span>
+          <span>{{ t('common.issueCount', { count: store.analysisResults.length }) }}</span>
           <div class="analysis-actions">
             <n-button size="small" tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
-              Analyze Current Logs
+              {{ t('analysis.analyzeCurrent') }}
             </n-button>
             <n-button size="small" tertiary :disabled="!store.selectedAnalysis" @click="copyAIContext()">
-              Generate AI Context for Selected
+              {{ t('analysis.generateSelected') }}
             </n-button>
           </div>
         </div>
 
         <div v-if="store.analysisResults.length === 0" class="empty-copy">
-          No crash, ANR, native crash, JNI, or install issue detected yet.
+          {{ t('analysis.empty') }}
         </div>
 
         <div v-else class="analysis-list">
@@ -123,44 +131,44 @@ function severityTagType(severity: string) {
           >
             <div class="analysis-head">
               <n-tag size="small" :type="severityTagType(result.severity)">
-                {{ result.type }}
+                {{ analysisTypeLabel(result.type) }}
               </n-tag>
               <n-tag size="small" :bordered="false">
-                {{ result.severity }}
+                {{ severityLabel(result.severity) }}
               </n-tag>
             </div>
-            <strong>{{ result.title }}</strong>
-            <p>{{ result.summary }}</p>
+            <strong>{{ analysisTitle(result) }}</strong>
+            <p>{{ analysisSummary(result) }}</p>
             <div class="analysis-actions">
               <n-button size="small" type="primary" tertiary @click.stop="copyAIContext(result.id)">
-                Copy AI Context
+                {{ t('analysis.copyContext') }}
               </n-button>
               <n-button size="small" tertiary @click.stop="exportAIContext(result.id)">
-                Export AI Context
+                {{ t('analysis.exportContext') }}
               </n-button>
             </div>
             <dl>
-              <dt>Package</dt>
+              <dt>{{ t('details.package') }}</dt>
               <dd>{{ result.packageName || '-' }}</dd>
               <dt>PID</dt>
               <dd>{{ result.pid || '-' }}</dd>
-              <dt>Time</dt>
+              <dt>{{ t('details.time') }}</dt>
               <dd>{{ result.timestamp || '-' }}</dd>
-              <dt>Reason</dt>
+              <dt>{{ t('analysis.reason') }}</dt>
               <dd>{{ result.reason || result.exceptionType || result.signal || '-' }}</dd>
-              <dt>Related</dt>
+              <dt>{{ t('analysis.related') }}</dt>
               <dd>{{ result.relatedEntryIds?.join(', ') || '-' }}</dd>
             </dl>
-            <h3>Key Frames</h3>
+            <h3>{{ t('analysis.keyFrames') }}</h3>
             <ul>
               <li v-for="frame in result.keyFrames || []" :key="frame">{{ frame }}</li>
               <li v-if="!result.keyFrames?.length">-</li>
             </ul>
-            <h3>Suggestions</h3>
+            <h3>{{ t('analysis.suggestions') }}</h3>
             <ul>
-              <li v-for="suggestion in result.suggestions || []" :key="suggestion">{{ suggestion }}</li>
+              <li v-for="suggestion in analysisSuggestions(result)" :key="suggestion">{{ suggestion }}</li>
             </ul>
-            <h3>Raw</h3>
+            <h3>{{ t('details.raw') }}</h3>
             <pre>{{ result.rawText || '-' }}</pre>
           </div>
         </div>

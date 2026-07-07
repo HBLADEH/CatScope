@@ -21,6 +21,7 @@ import type {
   LaunchResult,
   WorkspaceConfig
 } from '@/types/backend'
+import { getCurrentLocale, localizePresetName, t } from '@/i18n'
 import { backend } from '@/utils/wails'
 
 const ALL_LEVELS = ['V', 'D', 'I', 'W', 'E', 'F']
@@ -50,7 +51,7 @@ function defaultAIContextOptions(): AIContextOptions {
     includeAfterContextLines: 50,
     includeRawText: true,
     includeSuggestions: true,
-    language: 'zh-CN'
+    language: getCurrentLocale()
   }
 }
 
@@ -67,7 +68,7 @@ function defaultAppConfig(): AppConfig {
 function defaultWorkspaceConfig(): WorkspaceConfig {
   return {
     id: 'default',
-    workspaceName: 'Default Workspace',
+    workspaceName: t('defaults.defaultWorkspace'),
     projectPath: '',
     packageName: '',
     lastApkPath: '',
@@ -133,7 +134,7 @@ export const useLogStore = defineStore('logs', () => {
   const presetDraftName = ref('')
   const presetManagerOpen = ref(false)
   const aiContextOptions = ref<AIContextOptions>(defaultAIContextOptions())
-  const workspaceName = ref('Default Workspace')
+  const workspaceName = ref(t('defaults.defaultWorkspace'))
   const autoStartLogcat = ref(false)
   const autoClearOnLaunch = ref(false)
   const offlinePathInput = ref('')
@@ -170,7 +171,7 @@ export const useLogStore = defineStore('logs', () => {
   )
   const presetOptions = computed(() =>
     filterPresets.value.map((preset) => ({
-      label: preset.name,
+      label: localizePresetName(preset.id, preset.name),
       value: preset.id
     }))
   )
@@ -181,51 +182,51 @@ export const useLogStore = defineStore('logs', () => {
       return ''
     }
     if (!running.value) {
-      return 'Start Logcat to track package PIDs.'
+      return t('hint.startPidTracking')
     }
     if (currentPIDs.value.length === 0) {
-      return '目标 App 当前未运行，等待 PID 出现。'
+      return t('hint.appNotRunning')
     }
-    return `Tracking PID ${currentPIDs.value.join(', ')}`
+    return t('hint.trackingPid', { pids: currentPIDs.value.join(', ') })
   })
   const deviceHint = computed(() => {
     if (devices.value.length === 0) {
-      return 'No Android devices found. Connect a device and refresh.'
+      return t('hint.noDevices')
     }
     if (selectedDeviceState.value === 'unauthorized') {
-      return '请在手机上允许 USB 调试授权，然后刷新设备。'
+      return t('hint.unauthorized')
     }
     if (selectedDeviceState.value === 'offline') {
-      return '设备处于 offline 状态，请重新连接数据线或刷新设备。'
+      return t('hint.offline')
     }
     if (selectedSerial.value && selectedDeviceState.value !== 'device') {
-      return `设备状态为 ${selectedDeviceState.value}，暂不能启动 Logcat。`
+      return t('hint.badState', { state: selectedDeviceState.value })
     }
     return ''
   })
   const tableEmptyMessage = computed(() => {
     if (isSession.value && logs.value.length === 0) {
-      return 'Session is open but contains no log entries.'
+      return t('empty.session')
     }
     if (isOffline.value && logs.value.length === 0) {
-      return 'Offline log file is loaded but contains no parsed entries.'
+      return t('empty.offline')
     }
     if (!isStaticSource.value && devices.value.length === 0) {
-      return 'No device connected. Open an offline log file or refresh devices.'
+      return t('empty.noDevice')
     }
     if (!running.value && logs.value.length === 0) {
-      return 'Logcat is stopped. Choose a device and press Start.'
+      return t('empty.stopped')
     }
     if (running.value && logs.value.length === 0) {
-      return 'Logcat is running. Waiting for log entries...'
+      return t('empty.running')
     }
     if (selectedPackage.value && running.value && currentPIDs.value.length === 0 && filteredLogs.value.length === 0) {
-      return '目标 App 当前未运行，等待 PID 出现。'
+      return t('hint.appNotRunning')
     }
     if (logs.value.length > 0 && filteredLogs.value.length === 0) {
-      return 'No logs match the current search or level filter.'
+      return t('empty.noMatch')
     }
-    return 'No log entries yet.'
+    return t('empty.default')
   })
   const filteredLogs = computed(() => {
     const activeLevels = new Set(levels.value)
@@ -292,7 +293,7 @@ export const useLogStore = defineStore('logs', () => {
       }
       await fetchStatus()
       if (autoStartLogcat.value && canStart.value) {
-        notice.value = 'Auto-starting Logcat for restored workspace.'
+        notice.value = t('notice.autoStart')
         await start()
       }
     } catch (err) {
@@ -330,8 +331,8 @@ export const useLogStore = defineStore('logs', () => {
       await fetchStatus()
       await loadConfig()
       notice.value = resolved
-        ? `Using adb: ${resolved}`
-        : 'ADB path cleared. CatScope will auto-detect adb.'
+        ? t('notice.usingAdb', { path: resolved })
+        : t('notice.adbCleared')
       await refreshDevices()
     } catch (err) {
       setError(err)
@@ -343,19 +344,19 @@ export const useLogStore = defineStore('logs', () => {
 
   async function start() {
     if (!selectedSerial.value) {
-      error.value = '请选择一个已连接的 Android 设备。'
+      error.value = t('error.selectDevice')
       return
     }
     if (selectedDeviceState.value === 'unauthorized') {
-      error.value = '请在手机上允许 USB 调试授权，然后刷新设备。'
+      error.value = t('hint.unauthorized')
       return
     }
     if (selectedDeviceState.value === 'offline') {
-      error.value = '设备处于 offline 状态，请重新连接数据线或刷新设备。'
+      error.value = t('hint.offline')
       return
     }
     if (selectedDeviceState.value !== 'device') {
-      error.value = `设备状态为 ${selectedDeviceState.value}，暂不能启动 Logcat。`
+      error.value = t('hint.badState', { state: selectedDeviceState.value })
       return
     }
 
@@ -415,7 +416,11 @@ export const useLogStore = defineStore('logs', () => {
       paused.value = false
       offlinePathInput.value = result.filePath
       await fetchStatus()
-      notice.value = `Opened ${result.fileName}: ${result.count} log entries, ${result.parseFailedCount} raw line(s).`
+      notice.value = t('notice.openedLog', {
+        fileName: result.fileName,
+        count: result.count,
+        rawCount: result.parseFailedCount
+      })
     } catch (err) {
       setError(err)
       await fetchStatus()
@@ -439,7 +444,7 @@ export const useLogStore = defineStore('logs', () => {
       currentSession.value = null
       paused.value = false
       await fetchStatus()
-      notice.value = 'Returned to live device logcat mode.'
+      notice.value = t('notice.returnedLive')
     } catch (err) {
       setError(err)
     } finally {
@@ -535,7 +540,7 @@ export const useLogStore = defineStore('logs', () => {
     notice.value = ''
     try {
       const path = await backend.exportLogs(filteredLogs.value)
-      notice.value = `Exported ${filteredLogs.value.length} log entries to ${path}`
+      notice.value = t('notice.exported', { count: filteredLogs.value.length, path })
     } catch (err) {
       setError(err)
     }
@@ -546,7 +551,7 @@ export const useLogStore = defineStore('logs', () => {
     notice.value = ''
     try {
       const path = await backend.exportLogsJSONL(filteredLogs.value)
-      notice.value = `Exported ${filteredLogs.value.length} log entries as JSONL to ${path}`
+      notice.value = t('notice.exportedJsonl', { count: filteredLogs.value.length, path })
     } catch (err) {
       setError(err)
     }
@@ -569,7 +574,7 @@ export const useLogStore = defineStore('logs', () => {
     notice.value = ''
     try {
       if (logs.value.length === 0) {
-        throw new Error('No logs to save.')
+        throw new Error(t('error.noLogsToSave'))
       }
       const summary = await backend.saveSession(path.trim(), {
         name: sessionNameInput.value.trim() || currentSession.value?.name || workspaceName.value,
@@ -580,7 +585,7 @@ export const useLogStore = defineStore('logs', () => {
       currentSession.value = summary
       sessionPathInput.value = summary.filePath
       sessionNameInput.value = summary.name
-      notice.value = `Saved session: ${summary.logCount} logs, ${summary.analysisCount} issue(s).`
+      notice.value = t('notice.savedSession', { logs: summary.logCount, issues: summary.analysisCount })
     } catch (err) {
       setError(err)
     } finally {
@@ -604,7 +609,8 @@ export const useLogStore = defineStore('logs', () => {
       applySessionFilters(result.session.filters)
       aiContextOptions.value = {
         ...defaultAIContextOptions(),
-        ...(result.session.aiContextOptions ?? {})
+        ...(result.session.aiContextOptions ?? {}),
+        language: getCurrentLocale()
       }
       projectConfig.value = {
         ...projectConfig.value,
@@ -623,7 +629,11 @@ export const useLogStore = defineStore('logs', () => {
       sessionNotes.value = result.session.notes || ''
       paused.value = false
       await fetchStatus()
-      notice.value = `Opened session ${result.summary.name}: ${result.summary.logCount} logs, ${result.summary.analysisCount} issue(s).`
+      notice.value = t('notice.openedSession', {
+        name: result.summary.name,
+        logs: result.summary.logCount,
+        issues: result.summary.analysisCount
+      })
     } catch (err) {
       setError(err)
       await fetchStatus()
@@ -636,6 +646,7 @@ export const useLogStore = defineStore('logs', () => {
     return {
       ...defaultAIContextOptions(),
       ...aiContextOptions.value,
+      language: getCurrentLocale(),
       packageFilter: selectedPackage.value,
       levelFilter: [...levels.value],
       searchKeyword: search.value
@@ -645,7 +656,7 @@ export const useLogStore = defineStore('logs', () => {
   async function copyAIContext(resultID?: string) {
     const targetID = resultID || selectedAnalysis.value?.id
     if (!targetID) {
-      throw new Error('请先选择一个分析结果。')
+      throw new Error(t('error.selectAnalysis'))
     }
     await backend.copyAIContext(targetID, contextOptionsForRequest())
   }
@@ -653,7 +664,7 @@ export const useLogStore = defineStore('logs', () => {
   async function exportAIContext(resultID?: string) {
     const targetID = resultID || selectedAnalysis.value?.id
     if (!targetID) {
-      throw new Error('请先选择一个分析结果。')
+      throw new Error(t('error.selectAnalysis'))
     }
     return await backend.exportAIContext(targetID, contextOptionsForRequest())
   }
@@ -675,7 +686,7 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const config = await backend.resetConfig()
       applyAppConfig(config)
-      notice.value = 'Configuration reset to defaults.'
+      notice.value = t('notice.configReset')
     } catch (err) {
       setError(err)
     }
@@ -686,7 +697,7 @@ export const useLogStore = defineStore('logs', () => {
       const workspace = currentWorkspaceSnapshot()
       const config = await backend.saveWorkspace(workspace)
       applyAppConfig(config, false)
-      notice.value = `Workspace saved: ${workspace.workspaceName}`
+      notice.value = t('notice.workspaceSaved', { name: workspace.workspaceName })
     } catch (err) {
       setError(err)
     }
@@ -698,11 +709,11 @@ export const useLogStore = defineStore('logs', () => {
       const workspace = {
         ...currentWorkspaceSnapshot(),
         id: `workspace-${Date.now()}`,
-        workspaceName: `Workspace ${index}`
+        workspaceName: t('defaults.workspace', { index })
       }
       const config = await backend.saveWorkspace(workspace)
       applyAppConfig(config)
-      notice.value = `Workspace created: ${workspace.workspaceName}`
+      notice.value = t('notice.workspaceCreated', { name: workspace.workspaceName })
     } catch (err) {
       setError(err)
     }
@@ -718,7 +729,7 @@ export const useLogStore = defineStore('logs', () => {
       }
       const config = await backend.setActiveWorkspace(id)
       applyAppConfig(config)
-      notice.value = `Workspace selected: ${activeWorkspace.value?.workspaceName ?? id}`
+      notice.value = t('notice.workspaceSelected', { name: activeWorkspace.value?.workspaceName ?? id })
     } catch (err) {
       setError(err)
     }
@@ -731,7 +742,7 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const config = await backend.deleteWorkspace(activeWorkspaceID.value)
       applyAppConfig(config)
-      notice.value = 'Workspace deleted.'
+      notice.value = t('notice.workspaceDeleted')
     } catch (err) {
       setError(err)
     }
@@ -739,7 +750,7 @@ export const useLogStore = defineStore('logs', () => {
 
   async function saveCurrentFilter() {
     try {
-      const name = presetDraftName.value.trim() || `Preset ${filterPresets.value.length + 1}`
+      const name = presetDraftName.value.trim() || t('defaults.preset', { index: filterPresets.value.length + 1 })
       const preset: FilterPreset = {
         id: `preset-${Date.now()}`,
         name,
@@ -754,7 +765,7 @@ export const useLogStore = defineStore('logs', () => {
       applyAppConfig(config, false)
       selectedPresetID.value = preset.id
       presetDraftName.value = ''
-      notice.value = `Filter preset saved: ${name}`
+      notice.value = t('notice.filterSaved', { name })
     } catch (err) {
       setError(err)
     }
@@ -801,7 +812,7 @@ export const useLogStore = defineStore('logs', () => {
     if (presetPackage !== selectedPackage.value) {
       await selectPackage(presetPackage || null)
     }
-    notice.value = `Filter preset applied: ${preset.name}`
+    notice.value = t('notice.filterApplied', { name: localizePresetName(preset.id, preset.name) })
   }
 
   function applySessionFilters(filters?: SessionFilters) {
@@ -824,7 +835,7 @@ export const useLogStore = defineStore('logs', () => {
       }
       projectConfig.value.projectPath = path
       await saveProjectConfig()
-      notice.value = `Project selected: ${path}`
+      notice.value = t('notice.projectSelected', { path })
     } catch (err) {
       setError(err)
     }
@@ -838,7 +849,7 @@ export const useLogStore = defineStore('logs', () => {
       latestAPK.value = apk
       projectConfig.value.lastApkPath = apk.apkPath
       await saveProjectConfig()
-      notice.value = `Found APK: ${apk.fileName}`
+      notice.value = t('notice.foundApk', { fileName: apk.fileName })
       return apk
     } catch (err) {
       setError(err)
@@ -862,9 +873,9 @@ export const useLogStore = defineStore('logs', () => {
         await saveProjectConfig()
       }
       if (result.success) {
-        notice.value = `Build succeeded: ${result.apk?.fileName ?? 'APK generated'}`
+        notice.value = t('notice.buildSucceeded', { fileName: result.apk?.fileName ?? t('notice.apkGenerated') })
       } else {
-        error.value = result.error || 'Build failed.'
+        error.value = result.error || t('error.buildFailed')
       }
       return result
     } catch (err) {
@@ -888,9 +899,9 @@ export const useLogStore = defineStore('logs', () => {
       if (result.success) {
         projectConfig.value.lastApkPath = result.apkPath
         await saveProjectConfig()
-        notice.value = 'Install succeeded.'
+        notice.value = t('notice.installSucceeded')
       } else {
-        error.value = result.error || 'Install failed.'
+        error.value = result.error || t('error.installFailed')
       }
       return result
     } catch (err) {
@@ -926,10 +937,10 @@ export const useLogStore = defineStore('logs', () => {
         await selectPackage(result.packageName)
         await fetchPackagePIDState()
         notice.value = running.value
-          ? `Launched ${result.packageName}.`
-          : `Launched ${result.packageName}. Start Logcat to stream logs.`
+          ? t('notice.launched', { packageName: result.packageName })
+          : t('notice.launchedNeedStart', { packageName: result.packageName })
       } else {
-        error.value = result.error || 'Launch failed.'
+        error.value = result.error || t('error.launchFailed')
       }
       return result
     } catch (err) {
@@ -970,14 +981,14 @@ export const useLogStore = defineStore('logs', () => {
         await selectPackage(result.launch.packageName)
         await fetchPackagePIDState()
         notice.value = running.value
-          ? `Built, installed, and launched ${result.launch.packageName}.`
-          : `Built, installed, and launched ${result.launch.packageName}. Start Logcat to stream logs.`
+          ? t('notice.buildInstallLaunch', { packageName: result.launch.packageName })
+          : t('notice.buildInstallLaunchNeedStart', { packageName: result.launch.packageName })
       } else if (!result.build?.success) {
-        error.value = result.build?.error || 'Build failed.'
+        error.value = result.build?.error || t('error.buildFailed')
       } else if (!result.install?.success) {
-        error.value = result.install?.error || 'Install failed.'
+        error.value = result.install?.error || t('error.installFailed')
       } else {
-        error.value = result.launch?.error || 'Launch did not complete.'
+        error.value = result.launch?.error || t('error.launchIncomplete')
       }
     } catch (err) {
       setError(err)
@@ -1092,7 +1103,7 @@ export const useLogStore = defineStore('logs', () => {
       selectedAnalysis.value = null
       analysisIDs.clear()
       mergeAnalysisResults(results)
-      notice.value = `Analyzed ${filteredLogs.value.length} logs, found ${results.length} issue(s).`
+      notice.value = t('notice.analyzed', { logs: filteredLogs.value.length, issues: results.length })
     } catch (err) {
       setError(err)
     }
@@ -1146,7 +1157,7 @@ export const useLogStore = defineStore('logs', () => {
         ...(workspace.installOptions ?? {})
       }
     }
-    workspaceName.value = workspace.workspaceName || 'Default Workspace'
+    workspaceName.value = workspace.workspaceName || t('defaults.defaultWorkspace')
     autoStartLogcat.value = workspace.autoStartLogcat
     autoClearOnLaunch.value = workspace.autoClearOnLaunch
     selectedSerial.value = workspace.selectedDeviceSerial || ''
@@ -1158,7 +1169,8 @@ export const useLogStore = defineStore('logs', () => {
     packagePIDState.value = { packageName: selectedPackage.value }
     aiContextOptions.value = {
       ...defaultAIContextOptions(),
-      ...(workspace.aiContextOptions ?? {})
+      ...(workspace.aiContextOptions ?? {}),
+      language: getCurrentLocale()
     }
     latestAPK.value = workspace.lastApkPath
       ? {
@@ -1174,7 +1186,7 @@ export const useLogStore = defineStore('logs', () => {
     const base = activeWorkspace.value ?? defaultWorkspaceConfig()
     return {
       ...base,
-      workspaceName: workspaceName.value || base.workspaceName || 'Default Workspace',
+      workspaceName: workspaceName.value || base.workspaceName || t('defaults.defaultWorkspace'),
       projectPath: projectConfig.value.projectPath,
       packageName: projectConfig.value.packageName || selectedPackage.value,
       lastApkPath: projectConfig.value.lastApkPath,

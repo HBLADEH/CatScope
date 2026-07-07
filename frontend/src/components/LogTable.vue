@@ -6,6 +6,7 @@ import { CopyOutline } from '@vicons/ionicons5'
 import { NIcon, useMessage } from 'naive-ui'
 import { ClipboardSetText } from '../../wailsjs/runtime/runtime'
 
+import { t } from '@/i18n'
 import { useLogStore } from '@/stores/logs'
 import type { LogEntry } from '@/types/backend'
 
@@ -109,7 +110,7 @@ async function copySelectedLogs() {
   }
   try {
     await ClipboardSetText(selectedLogs.value.map(formatLogEntry).join('\n'))
-    message.success(`已复制 ${selectedLogs.value.length} 条日志。`)
+    message.success(t('table.copySuccess', { count: selectedLogs.value.length }))
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   }
@@ -119,32 +120,32 @@ async function copySelectedLogs() {
 <template>
   <section class="log-panel">
     <div class="log-actions">
-      <span>{{ selectedCount }} selected</span>
+      <span>{{ t('table.selected', { count: selectedCount }) }}</span>
       <div class="log-action-buttons">
         <n-button size="tiny" tertiary :disabled="selectedCount === 0" @click="copySelectedLogs">
           <template #icon>
             <n-icon :component="CopyOutline" />
           </template>
-          Copy
+          {{ t('table.copy') }}
         </n-button>
         <n-button size="tiny" tertiary :disabled="store.filteredLogs.length === 0" @click="selectAllVisible">
-          Select Visible
+          {{ t('table.selectVisible') }}
         </n-button>
         <n-button size="tiny" tertiary :disabled="selectedCount === 0" @click="clearSelection">
-          Clear
+          {{ t('table.clearSelection') }}
         </n-button>
       </div>
     </div>
 
     <div class="log-header grid-row">
       <span></span>
-      <span>Time</span>
-      <span>Level</span>
-      <span>PID</span>
-      <span>TID</span>
-      <span>Package</span>
-      <span>Tag</span>
-      <span>Message</span>
+      <span>{{ t('table.time') }}</span>
+      <span>{{ t('table.level') }}</span>
+      <span>{{ t('table.pid') }}</span>
+      <span>{{ t('table.tid') }}</span>
+      <span>{{ t('table.package') }}</span>
+      <span>{{ t('table.tag') }}</span>
+      <span>{{ t('table.message') }}</span>
     </div>
 
     <div
@@ -164,7 +165,7 @@ async function copySelectedLogs() {
           type="button"
           @click="store.clearSearch"
         >
-          Clear filters
+          {{ t('table.clearFilters') }}
         </button>
       </div>
       <div v-else class="virtual-spacer" :style="{ height: `${totalSize}px` }">
@@ -179,7 +180,7 @@ async function copySelectedLogs() {
           :style="{ transform: `translateY(${virtualRow.start}px)` }"
           @click="handleRowClick(store.filteredLogs[virtualRow.index], virtualRow.index, $event)"
         >
-          <span class="selection-cell" :aria-label="selectedLogIDs.has(store.filteredLogs[virtualRow.index].id) ? 'Selected' : 'Not selected'">
+          <span class="selection-cell" :aria-label="selectedLogIDs.has(store.filteredLogs[virtualRow.index].id) ? t('table.selectedAria') : t('table.notSelectedAria')">
             <span v-if="selectedLogIDs.has(store.filteredLogs[virtualRow.index].id)" class="selection-mark"></span>
           </span>
           <span class="mono muted">{{ store.filteredLogs[virtualRow.index].timestamp || '-' }}</span>
