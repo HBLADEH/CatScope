@@ -7,6 +7,11 @@ frontend/dist/*
 
 /build/*
 !/build/appicon.png
+!/build/darwin/
+!/build/darwin/Info.plist
+!/build/darwin/Info.dev.plist
+
+/dist/*
 
 # Raw logo candidate with background; use Logo.png or docs/assets/logo.png instead.
 Logo.candidate.png

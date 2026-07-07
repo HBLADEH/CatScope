@@ -1,11 +1,11 @@
 # CatScope 手工 QA 检查清单
 
-本清单用于 v0.6.0-preview 手工验收。CatScope 是轻量 Logcat 排障工作台；不要把完整 IDE、Gradle Project Sync 或外部 AI API 集成视为本阶段缺陷。
+本清单用于 v0.6.3-preview 手工验收。CatScope 是轻量 Logcat 排障工作台；不要把完整 IDE、Gradle Project Sync 或外部 AI API 集成视为本阶段缺陷。
 
 ## 测试矩阵
 
-- OS: Windows 10 / Windows 11。
-- App build: 本地开发构建或发布版 `CatScope.exe`。
+- OS: Windows 10 / Windows 11；有条件时覆盖 Intel 或 Apple Silicon 上的 macOS universal preview。
+- App build: 本地开发构建、发布版 `CatScope.exe`，或 preview DMG 中的 macOS `CatScope.app`。
 - Device: 至少一台 Android 真机或模拟器。
 - adb: Android SDK Platform Tools 可通过 `PATH`、`ANDROID_HOME`、`ANDROID_SDK_ROOT` 或 CatScope 配置找到。
 - Test files: 一个 `.txt` 或 `.log` Logcat 文件，一个 CatScope `.jsonl` 导出文件，如有条件再准备一个 `.catscope-session` 文件。
@@ -13,6 +13,7 @@
 ## 启动
 
 - [ ] 从发布版 exe 或 `wails dev` 启动 CatScope。
+- [ ] macOS 上从 DMG 安装，将 `CatScope.app` 拖入 Applications，并记录 Gatekeeper 是否要求通过 Finder 右键菜单打开。
 - [ ] 确认主窗口正常打开，没有白屏。
 - [ ] adb 可用时，确认启动后没有错误 toast。
 - [ ] adb 缺失或配置错误时，确认应用仍可操作，并显示可恢复的错误。
@@ -26,6 +27,7 @@
 - [ ] 对已授权设备，确认 model、brand、Android version、SDK 和 ABI 信息可见。
 - [ ] 断开并重新连接设备，刷新后确认 UI 能恢复。
 - [ ] 运行 `adb version`，并在 QA 记录中保存版本信息。
+- [ ] macOS 上确认 adb 以 `adb` 形式被发现；如果 CatScope 看不到 shell `PATH`，请配置完整 SDK 路径，例如 `/Users/<you>/Library/Android/sdk/platform-tools/adb`。
 
 ## Live Logcat
 
@@ -51,6 +53,7 @@
 ## Build / Install / Launch
 
 - [ ] 选择包含 `gradlew` 或 `gradlew.bat` 的有效 Android 项目目录。
+- [ ] macOS 上确认同时存在两个 wrapper 文件时，CatScope 会优先使用 `gradlew`。
 - [ ] 确认 CatScope 会校验 `settings.gradle` 或 `settings.gradle.kts`。
 - [ ] 执行默认 `assembleDebug` 任务。
 - [ ] 确认 CatScope 会在 `build/outputs/apk` 下找到最新 debug APK。
@@ -114,6 +117,16 @@
 - [ ] 将 AI Context 导出为 `.md`。
 - [ ] 保存 `.catscope-session` 文件。
 - [ ] 确认导出文件不依赖网络，并可在本地检查。
+
+## macOS 发布包
+
+- [ ] 运行 `scripts/build-macos.sh`。
+- [ ] 确认 `dist/CatScope-v0.6.3-preview-macos-universal.dmg` 存在。
+- [ ] 确认 `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256` 存在。
+- [ ] 运行 `lipo -archs build/bin/CatScope.app/Contents/MacOS/CatScope` 并确认输出包含 `x86_64 arm64`。
+- [ ] 运行 `codesign -dv build/bin/CatScope.app` 并确认 preview 签名为 ad-hoc/self-signed。
+- [ ] 运行 `hdiutil verify dist/CatScope-v0.6.3-preview-macos-universal.dmg`。
+- [ ] 运行 `cd dist`，再运行 `shasum -a 256 -c CatScope-v0.6.3-preview-macos-universal.dmg.sha256`。
 
 ## Return to Live Mode
 

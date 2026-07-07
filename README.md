@@ -13,8 +13,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-v0.6.0--preview-blue" alt="Preview status" />
-  <img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Platform: Windows" />
+  <img src="https://img.shields.io/badge/status-v0.6.3--preview-blue" alt="Preview status" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20preview-0078D4" alt="Platform: Windows and macOS preview" />
 </p>
 
 <p align="center">
@@ -60,7 +60,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-Current version: **v0.6.0-preview**.
+Current version: **v0.6.3-preview**.
 
 CatScope is currently in Preview / Dev status. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, lightweight Workspace / Filter Presets, and Session save / restore are available.
 
@@ -135,7 +135,8 @@ CatScope is a lightweight Android Logcat debugging workbench. It is not an Andro
   - [x] Show session name, file path, log count, analysis count, and created time.
 - [ ] More export formats: csv, zip.
 - [ ] Module and variant selection for Build / Install / Launch.
-- [ ] macOS and Linux support.
+- [x] macOS universal preview build for Intel and Apple Silicon.
+- [ ] Linux support.
 
 ## Quick Start
 
@@ -144,7 +145,7 @@ CatScope is a lightweight Android Logcat debugging workbench. It is not an Andro
 - Go 1.22 or later.
 - Node.js 20 or later and npm 10 or later.
 - Wails v2 CLI.
-- Windows with Microsoft WebView2 Runtime.
+- Windows with Microsoft WebView2 Runtime, or macOS for the current universal preview build.
 - Android SDK Platform Tools, with `adb` available through one of:
   - `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
   - `platform-tools` added to `PATH`.
@@ -189,6 +190,20 @@ scripts\build-windows.ps1
 
 For a GitHub Release build, download the Windows artifact, extract it if it is a portable archive, and run `CatScope.exe`. Live Logcat needs a device or emulator with USB debugging enabled. On the first USB connection, Android shows an authorization dialog on the device; accept it, then refresh the CatScope device list.
 
+### macOS Preview Usage
+
+For a local universal preview package that runs on both Intel and Apple Silicon Macs:
+
+```sh
+scripts/build-macos.sh
+```
+
+The script runs Go tests, the frontend build, `wails build -platform darwin/universal -clean -skipbindings`, creates `dist/CatScope-v0.6.3-preview-macos-universal.dmg`, and writes `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256`.
+
+For a GitHub Release build, download the macOS DMG, open it, and drag `CatScope.app` to Applications. This preview is self-signed/ad-hoc signed and is not Apple-notarized yet, so macOS Gatekeeper may require opening it from Finder's context menu or allowing it in System Settings on first launch.
+
+On macOS, adb is usually named `adb` instead of `adb.exe`. CatScope can discover adb from `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `PATH`, but apps launched from Finder may not inherit your shell `PATH`. If adb is not detected, set the full adb path in CatScope, for example `/Users/<you>/Library/Android/sdk/platform-tools/adb`.
+
 ### FAQ
 
 **Is CatScope an Android Studio replacement?**
@@ -225,7 +240,8 @@ Virtual scrolling: Vue virtual scrolling utilities
 ADB integration: Go exec.Command
 Local storage: JSON configuration, SQLite planned
 Primary platform: Windows
-Planned platforms: macOS, Linux
+Preview platform: macOS universal (Intel + Apple Silicon)
+Planned platform: Linux
 ```
 
 Vue 3 keeps the desktop-tool UI easy to evolve. Naive UI fits dark themes, forms, drawers, tabs, notifications, and workbench-style layouts. Pinia owns device, log stream, filter, and session state. Virtual scrolling keeps large Logcat sessions responsive.
@@ -348,7 +364,7 @@ scripts\check.ps1
 
 ## Privacy
 
-CatScope reads device information and live Logcat through local adb. Offline log files are read from local disk only. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows, and are not written into Android project directories. `.catscope-session` files are local JSON files that store a CatScope debugging state, including logs, filters, Analysis results, and AI Context options; CatScope does not upload them to the cloud. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs, session files, or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
+CatScope reads device information and live Logcat through local adb. Offline log files are read from local disk only. Workspace and preset settings are saved as JSON in the user's local CatScope configuration directory, such as `%APPDATA%/CatScope/config.json` on Windows or the Wails app config location on macOS, and are not written into Android project directories. `.catscope-session` files are local JSON files that store a CatScope debugging state, including logs, filters, Analysis results, and AI Context options; CatScope does not upload them to the cloud. The project does not require uploading logs to a remote service. The AI Context Generator only creates local Markdown for you to copy or export; it does not call any external AI API. When sharing exported logs, session files, or AI context, avoid leaking sensitive device information, user data, tokens, package names, or internal business logs.
 
 ## License
 

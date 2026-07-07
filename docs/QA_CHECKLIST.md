@@ -1,11 +1,11 @@
 # CatScope Manual QA Checklist
 
-Use this checklist for v0.6.0-preview manual verification. CatScope is a lightweight Logcat troubleshooting workbench; do not treat missing full IDE behavior, Gradle Project Sync, or external AI API integration as regressions.
+Use this checklist for v0.6.3-preview manual verification. CatScope is a lightweight Logcat troubleshooting workbench; do not treat missing full IDE behavior, Gradle Project Sync, or external AI API integration as regressions.
 
 ## Test Matrix
 
-- OS: Windows 10 / Windows 11.
-- App build: local dev build or release `CatScope.exe`.
+- OS: Windows 10 / Windows 11, plus macOS universal preview on Intel or Apple Silicon when available.
+- App build: local dev build, release `CatScope.exe`, or macOS `CatScope.app` from the preview DMG.
 - Device: at least one physical Android device or emulator.
 - adb: Android SDK Platform Tools available through `PATH`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or CatScope configuration.
 - Test files: one `.txt` or `.log` Logcat file, one CatScope `.jsonl` export, and one `.catscope-session` file if available.
@@ -13,6 +13,7 @@ Use this checklist for v0.6.0-preview manual verification. CatScope is a lightwe
 ## Startup
 
 - [ ] Launch CatScope from the release executable or `wails dev`.
+- [ ] On macOS, install from the DMG, drag `CatScope.app` to Applications, and record whether Gatekeeper requires the Finder context-menu Open flow.
 - [ ] Confirm the main window opens without a blank screen.
 - [ ] Confirm no startup error toast appears when adb is available.
 - [ ] Confirm the app remains usable when adb is missing or misconfigured and shows a recoverable error.
@@ -26,6 +27,7 @@ Use this checklist for v0.6.0-preview manual verification. CatScope is a lightwe
 - [ ] For an authorized device, confirm model, brand, Android version, SDK, and ABI are shown.
 - [ ] Disconnect and reconnect the device, then refresh and confirm the UI recovers.
 - [ ] Run `adb version` and record the version for the QA notes.
+- [ ] On macOS, confirm adb is discovered as `adb`; if CatScope cannot see shell `PATH`, configure the full SDK path such as `/Users/<you>/Library/Android/sdk/platform-tools/adb`.
 
 ## Live Logcat
 
@@ -51,6 +53,7 @@ Use this checklist for v0.6.0-preview manual verification. CatScope is a lightwe
 ## Build / Install / Launch
 
 - [ ] Select a valid Android project directory containing `gradlew` or `gradlew.bat`.
+- [ ] On macOS, confirm CatScope prefers `gradlew` when both wrapper files exist.
 - [ ] Confirm CatScope validates `settings.gradle` or `settings.gradle.kts`.
 - [ ] Run the default `assembleDebug` task.
 - [ ] Confirm CatScope finds the newest debug APK under `build/outputs/apk`.
@@ -114,6 +117,16 @@ Use this checklist for v0.6.0-preview manual verification. CatScope is a lightwe
 - [ ] Export AI Context as `.md`.
 - [ ] Save a `.catscope-session` file.
 - [ ] Confirm exported files do not require network access and can be inspected locally.
+
+## macOS Release Package
+
+- [ ] Run `scripts/build-macos.sh`.
+- [ ] Confirm `dist/CatScope-v0.6.3-preview-macos-universal.dmg` exists.
+- [ ] Confirm `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256` exists.
+- [ ] Run `lipo -archs build/bin/CatScope.app/Contents/MacOS/CatScope` and confirm `x86_64 arm64`.
+- [ ] Run `codesign -dv build/bin/CatScope.app` and confirm preview signing is ad-hoc/self-signed.
+- [ ] Run `hdiutil verify dist/CatScope-v0.6.3-preview-macos-universal.dmg`.
+- [ ] Run `cd dist` and then `shasum -a 256 -c CatScope-v0.6.3-preview-macos-universal.dmg.sha256`.
 
 ## Return to Live Mode
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -100,23 +101,30 @@ func (a *App) FindADB(configuredPath string) (string, error) {
 
 func (a *App) SelectADBExecutable() (string, error) {
 	path, err := wailsruntime.OpenFileDialog(a.context(), wailsruntime.OpenDialogOptions{
-		Title: "Select adb executable",
-		Filters: []wailsruntime.FileFilter{
-			{
-				DisplayName: "ADB executable",
-				Pattern:     "adb.exe;adb",
-			},
-			{
-				DisplayName: "All files",
-				Pattern:     "*.*",
-			},
-		},
+		Title:   "Select adb executable",
+		Filters: adbExecutableDialogFilters(runtime.GOOS),
 	})
 	if err != nil {
 		a.setLastError(err.Error())
 		return "", err
 	}
 	return strings.TrimSpace(path), nil
+}
+
+func adbExecutableDialogFilters(goos string) []wailsruntime.FileFilter {
+	if goos != "windows" {
+		return nil
+	}
+	return []wailsruntime.FileFilter{
+		{
+			DisplayName: "ADB executable",
+			Pattern:     "adb.exe",
+		},
+		{
+			DisplayName: "All files",
+			Pattern:     "*.*",
+		},
+	}
 }
 
 func (a *App) UseADBPath(configuredPath string) (string, error) {
