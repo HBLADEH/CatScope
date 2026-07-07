@@ -16,6 +16,24 @@ Use this checklist when preparing a CatScope preview release.
 - SHA256 checksum
 - Screenshots, when real screenshots are available
 
+## GitHub Actions Release Flow
+
+The `Release` workflow builds Windows and macOS assets together.
+
+- Push a preview tag such as `v0.6.3-preview` to create a draft prerelease.
+- Push a stable tag such as `v0.6.3` to create a normal GitHub Release.
+- Use the manual `workflow_dispatch` trigger when you want to rebuild a tag from the Actions page; set `draft_release` to keep the result draft for review.
+
+Examples:
+
+```sh
+git tag v0.6.3-preview
+git push origin v0.6.3-preview
+
+git tag v0.6.3
+git push origin v0.6.3
+```
+
 ## Checksum
 
 Run this from the repository root after building the Windows executable:
