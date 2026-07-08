@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-v0.6.3--preview-blue" alt="Preview status" />
+  <img src="https://img.shields.io/badge/status-v0.6.4-blue" alt="Preview status" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20preview-0078D4" alt="Platform: Windows and macOS preview" />
 </p>
 
