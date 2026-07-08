@@ -5,11 +5,11 @@
 <h1 align="center">CatScope</h1>
 
 <p align="center">
-  <strong>Lightweight Android Logcat Workbench.</strong>
+  <strong>Android Logcat Viewer and Debugging Tool.</strong>
 </p>
 
 <p align="center">
-  Package-aware filtering, Crash Analyzer, AI Context Generator, Offline Log Viewer, and Session restore without opening Android Studio.
+  A lightweight Android Logcat tool for live adb logcat, offline log files, package/PID filters, Crash and ANR analysis, and local AI-ready context without opening Android Studio.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
   <a href="#documentation">Documentation</a>
 </p>
 
-CatScope is a lightweight desktop workbench for Android Logcat. It is built for developers who need Android logs, crash clues, package filtering, device state, and routine debugging actions without opening the full Android Studio IDE.
+CatScope is a lightweight Android Logcat viewer and desktop debugging tool. It helps Android developers inspect live `adb logcat` streams, search and filter logs by package, PID, level, tag, keyword, or regex, analyze Crash / ANR / native / JNI clues, and reopen offline log sessions without launching the full Android Studio IDE.
 
 > Better than raw `adb logcat`, lighter than Android Studio, and more Android-aware than a generic log viewer.
 
@@ -38,7 +38,7 @@ CatScope is not trying to replace Android Studio. The core idea is **Logcat with
 
 Highlights:
 
-- **Lightweight Android Logcat Workbench** for focused Android troubleshooting.
+- **Android Logcat Viewer / Logcat Tool** for focused Android troubleshooting.
 - **Package-aware filtering** with package selection, PID tracking, level filters, tags, keywords, exclusions, and regex search.
 - **Crash Analyzer** for Java crashes, ANR, native crashes, JNI errors, and install failures.
 - **AI Context Generator** that creates local Markdown without calling external AI APIs.

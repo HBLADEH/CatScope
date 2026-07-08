@@ -5,11 +5,11 @@
 <h1 align="center">CatScope</h1>
 
 <p align="center">
-  <strong>Lightweight Android Logcat Workbench.</strong>
+  <strong>Android Logcat Viewer and Debugging Tool.</strong>
 </p>
 
 <p align="center">
-  一个支持按包过滤、Crash Analyzer、AI Context Generator、离线日志查看和 Session 恢复的轻量级 Android Logcat 工作台。
+  一个轻量级 Android Logcat 工具，支持 live adb logcat、离线日志文件、package/PID 过滤、Crash 和 ANR 分析，以及本地 AI Context 生成。
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
   <a href="#文档">文档</a>
 </p>
 
-CatScope 是一个脱离 Android Studio 的轻量级 Android Logcat 调试工作台。它面向那些只想快速查看 Android 日志、定位崩溃线索、按包名和 PID 过滤、导出关键日志、执行日常调试动作的开发者。
+CatScope 是一个轻量级 Android Logcat Viewer 和桌面调试工具。它适合 Android 开发者查看 live `adb logcat` 流，按 package、PID、level、tag、关键词或 regex 搜索过滤日志，分析 Crash / ANR / native / JNI 线索，并在不打开完整 Android Studio 的情况下继续查看离线日志会话。
 
 > 比 `adb logcat` 好用，比 Android Studio 更轻量，比普通日志查看器更懂 Android。
 
@@ -38,7 +38,7 @@ CatScope 不打算替代 Android Studio。它的核心思想是 **Logcat without
 
 核心亮点：
 
-- **Lightweight Android Logcat Workbench**，专注 Android 日常排障。
+- **Android Logcat Viewer / Logcat Tool**，专注 Android 日常排障。
 - **Package-aware filtering**，支持 package 选择、PID 追踪、level、tag、关键词、排除词和 regex 过滤。
 - **Crash Analyzer**，覆盖 Java crash、ANR、native crash、JNI error 和安装失败。
 - **AI Context Generator**，在本地生成 Markdown，不调用外部 AI API。
