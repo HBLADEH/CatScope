@@ -540,7 +540,6 @@ dd {
 .grid-row {
   display: grid;
   grid-template-columns: 24px 118px 42px 54px 54px minmax(84px, 0.9fr) minmax(96px, 0.9fr) minmax(300px, 3fr);
-  align-items: center;
   gap: 6px;
   min-width: var(--log-grid-min-width);
 }
@@ -565,6 +564,7 @@ dd {
 }
 
 .log-header {
+  align-items: center;
   padding: 0 10px;
   overflow: hidden;
   border-bottom: 1px solid var(--border);
@@ -591,9 +591,10 @@ dd {
   position: absolute;
   top: 0;
   left: 0;
+  align-items: start;
   width: max(100%, var(--log-grid-min-width));
-  height: 26px;
-  padding: 0 10px;
+  min-height: 30px;
+  padding: 5px 10px;
   border: 0;
   border-bottom: 1px solid var(--border-soft);
   color: var(--text);
@@ -685,12 +686,25 @@ dd {
 }
 
 .package-cell,
-.tag-cell,
-.message-cell {
+.tag-cell {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.message-cell {
+  display: -webkit-box;
+  min-width: 0;
+  max-height: 68px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .package-cell {
@@ -702,11 +716,6 @@ dd {
 .tag-cell {
   color: var(--text);
   font-weight: 650;
-}
-
-.message-cell {
-  color: var(--text);
-  font-size: 12px;
 }
 
 .empty-log,

@@ -27,6 +27,17 @@ import { backend } from '@/utils/wails'
 const ALL_LEVELS = ['V', 'D', 'I', 'W', 'E', 'F']
 const UI_LOG_LIMIT = 100000
 
+type QueryField = 'any' | 'tag' | 'message' | 'package' | 'process' | 'pid' | 'tid' | 'level' | 'raw'
+type MatchMode = 'contains' | 'equals' | 'startsWith' | 'regex'
+
+interface QueryFilter {
+  field: QueryField
+  mode: MatchMode
+  value: string
+  negative: boolean
+  regex: RegExp | null
+}
+
 function defaultProjectConfig(): ProjectConfig {
   return {
     projectPath: '',
@@ -230,10 +241,11 @@ export const useLogStore = defineStore('logs', () => {
   })
   const filteredLogs = computed(() => {
     const activeLevels = new Set(levels.value)
-    const keyword = search.value.trim().toLowerCase()
+    const query = parseSearchQuery(search.value)
+    const keyword = query.text.trim().toLowerCase()
     const exclude = excludeKeyword.value.trim().toLowerCase()
     const tags = parseTags(tagFilter.value)
-    const regex = regexEnabled.value && search.value.trim() ? safeRegex(search.value.trim()) : null
+    const regex = regexEnabled.value && query.text.trim() ? safeRegex(query.text.trim()) : null
 
     return logs.value.filter((entry) => {
       if (!activeLevels.has(entry.level)) {
@@ -243,6 +255,9 @@ export const useLogStore = defineStore('logs', () => {
         return false
       }
       if (tags.length > 0 && !tags.some((tag) => entry.tag.toLowerCase().includes(tag))) {
+        return false
+      }
+      if (query.filters.length > 0 && !matchesQueryFilters(entry, query.filters)) {
         return false
       }
       if (!keyword) {
@@ -533,6 +548,9 @@ export const useLogStore = defineStore('logs', () => {
   function clearSearch() {
     search.value = ''
     levels.value = [...ALL_LEVELS]
+    tagFilter.value = ''
+    excludeKeyword.value = ''
+    regexEnabled.value = false
   }
 
   async function exportFiltered() {
@@ -1205,11 +1223,186 @@ export const useLogStore = defineStore('logs', () => {
 
   function entryHaystack(entry: LogEntry) {
     return [
+      entry.packageName,
+      entry.pid ? String(entry.pid) : '',
+      entry.tid ? String(entry.tid) : '',
+      entry.level,
       entry.tag,
       entry.message,
       entry.raw,
       ...(entry.multiline ?? [])
     ].join('\n')
+  }
+
+  function parseSearchQuery(value: string) {
+    const filters: QueryFilter[] = []
+    const textTerms: string[] = []
+
+    for (const token of tokenizeQuery(value)) {
+      const fieldMatch = token.match(/^(-?)(tag|message|msg|package|pkg|app|process|pid|tid|level|raw)(~:|\^:|\^=|~=|=|:)(.+)$/i)
+      if (!fieldMatch) {
+        textTerms.push(unquote(token))
+        continue
+      }
+      const field = normalizeQueryField(fieldMatch[2])
+      const mode = normalizeMatchMode(fieldMatch[3])
+      const rawValue = unquote(fieldMatch[4].trim())
+      if (!rawValue) {
+        continue
+      }
+      filters.push({
+        field,
+        mode,
+        value: normalizeQueryValue(field, rawValue),
+        negative: fieldMatch[1] === '-',
+        regex: mode === 'regex' ? safeRegex(rawValue) : null
+      })
+    }
+
+    return {
+      text: textTerms.join(' '),
+      filters
+    }
+  }
+
+  function tokenizeQuery(value: string) {
+    const tokens: string[] = []
+    let current = ''
+    let quote = ''
+
+    for (const char of value.trim()) {
+      if ((char === '"' || char === "'") && (!quote || quote === char)) {
+        quote = quote ? '' : char
+        current += char
+        continue
+      }
+      if (/\s/.test(char) && !quote) {
+        if (current.trim()) {
+          tokens.push(current.trim())
+        }
+        current = ''
+        continue
+      }
+      current += char
+    }
+
+    if (current.trim()) {
+      tokens.push(current.trim())
+    }
+    return tokens
+  }
+
+  function unquote(value: string) {
+    const trimmed = value.trim()
+    if (trimmed.length >= 2) {
+      const first = trimmed[0]
+      const last = trimmed[trimmed.length - 1]
+      if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+        return trimmed.slice(1, -1)
+      }
+    }
+    return trimmed
+  }
+
+  function normalizeQueryField(field: string): QueryField {
+    switch (field.toLowerCase()) {
+      case 'msg':
+      case 'message':
+        return 'message'
+      case 'pkg':
+      case 'app':
+      case 'package':
+        return 'package'
+      case 'process':
+        return 'process'
+      case 'pid':
+        return 'pid'
+      case 'tid':
+        return 'tid'
+      case 'level':
+        return 'level'
+      case 'raw':
+        return 'raw'
+      default:
+        return 'tag'
+    }
+  }
+
+  function normalizeMatchMode(operator: string): MatchMode {
+    if (operator === '=') {
+      return 'equals'
+    }
+    if (operator === '^=' || operator === '^:') {
+      return 'startsWith'
+    }
+    if (operator === '~=' || operator === '~:') {
+      return 'regex'
+    }
+    return 'contains'
+  }
+
+  function normalizeQueryValue(field: QueryField, value: string) {
+    if (field !== 'level') {
+      return value
+    }
+    const level = value.trim().toLowerCase()
+    const aliases: Record<string, string> = {
+      verbose: 'V',
+      debug: 'D',
+      info: 'I',
+      warn: 'W',
+      warning: 'W',
+      error: 'E',
+      fatal: 'F',
+      assert: 'F'
+    }
+    return aliases[level] ?? value.toUpperCase()
+  }
+
+  function matchesQueryFilters(entry: LogEntry, filters: QueryFilter[]) {
+    return filters.every((filter) => {
+      const matched = matchesQueryFilter(entry, filter)
+      return filter.negative ? !matched : matched
+    })
+  }
+
+  function matchesQueryFilter(entry: LogEntry, filter: QueryFilter) {
+    const value = queryFieldValue(entry, filter.field)
+    if (filter.mode === 'regex') {
+      return Boolean(filter.regex?.test(value))
+    }
+    const haystack = value.toLowerCase()
+    const needle = filter.value.toLowerCase()
+    if (filter.mode === 'equals') {
+      return haystack === needle
+    }
+    if (filter.mode === 'startsWith') {
+      return haystack.startsWith(needle)
+    }
+    return haystack.includes(needle)
+  }
+
+  function queryFieldValue(entry: LogEntry, field: QueryField) {
+    switch (field) {
+      case 'tag':
+        return entry.tag || ''
+      case 'message':
+        return [entry.message, ...(entry.multiline ?? [])].join('\n')
+      case 'package':
+        return entry.packageName || ''
+      case 'process':
+        return [entry.packageName, entry.pid ? String(entry.pid) : ''].join('\n')
+      case 'pid':
+        return entry.pid ? String(entry.pid) : ''
+      case 'tid':
+        return entry.tid ? String(entry.tid) : ''
+      case 'level':
+        return entry.level || ''
+      case 'raw':
+        return [entry.raw, ...(entry.multiline ?? [])].join('\n')
+      default:
+        return entryHaystack(entry)
+    }
   }
 
   function parseTags(value: string) {

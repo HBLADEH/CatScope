@@ -102,6 +102,7 @@ scripts/build-macos.sh
 
 - Go 后端改动：运行 `go test ./...`。
 - 前端改动：在 `frontend/` 下运行 `npm run build`。
+- 如果为了验证改动启动了前端开发服务（例如 `npm run dev`、`wails dev` 或其他本地预览服务），测试结束后要主动关闭相关服务，避免端口占用和后台进程遗留。
 - Wails 暴露 API 或导出结构变化：重新生成/检查 `frontend/wailsjs`，并运行 Go 测试和前端构建。
 - 发布或构建流程改动：Windows 可用时运行 `scripts/check.ps1`；macOS 发布包改动时运行 `scripts/build-macos.sh`。
 - 仅文档改动：至少运行 `git diff --check`。

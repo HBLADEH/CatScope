@@ -20,7 +20,7 @@ const rowVirtualizer = useVirtualizer(
   computed(() => ({
     count: store.filteredLogs.length,
     getScrollElement: () => parentRef.value,
-    estimateSize: () => 26,
+    estimateSize: () => 42,
     overscan: 20
   }))
 )
@@ -40,6 +40,7 @@ const scrollToBottom = useDebounceFn(() => {
 watch(
   () => store.filteredLogs.length,
   async () => {
+    rowVirtualizer.value.measure()
     if (store.paused) {
       return
     }
@@ -50,6 +51,12 @@ watch(
 
 function levelClass(level: string) {
   return `level level-${level || 'unknown'}`
+}
+
+function measureRow(element: unknown) {
+  if (element instanceof HTMLElement) {
+    rowVirtualizer.value.measureElement(element)
+  }
 }
 
 function handleRowClick(entry: LogEntry, index: number, event: MouseEvent) {
@@ -172,7 +179,9 @@ async function copySelectedLogs() {
         <button
           v-for="virtualRow in virtualRows"
           :key="store.filteredLogs[virtualRow.index].id"
+          :ref="measureRow"
           class="log-row grid-row"
+          :data-index="virtualRow.index"
           :class="{
             selected: store.selectedLog?.id === store.filteredLogs[virtualRow.index].id,
             'multi-selected': selectedLogIDs.has(store.filteredLogs[virtualRow.index].id)

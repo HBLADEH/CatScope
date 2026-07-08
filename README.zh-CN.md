@@ -88,6 +88,7 @@ CatScope 是轻量 Android Logcat 调试工作台，不是 Android Studio 替代
   - [x] Package 搜索、选择、清空，以及全部日志模式。
   - [x] PID 自动追踪，应用重启后自动更新当前 PID。
   - [x] Package / Level 组合过滤，大小写不敏感搜索。
+  - [x] 搜索框支持 `tag:`、`pid:`、`level:`、排除词和字段匹配等高级查询语法。
 - [x] 日志解析与交互
   - [x] threadtime 解析、raw 保留、多行日志归并。
   - [x] Java stacktrace 和 AndroidRuntime `FATAL EXCEPTION` 基础归并。

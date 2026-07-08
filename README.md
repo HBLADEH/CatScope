@@ -88,6 +88,7 @@ CatScope is a lightweight Android Logcat debugging workbench. It is not an Andro
   - [x] Package search, selection, clearing, and all-log mode.
   - [x] PID tracking for the selected package, including app restarts.
   - [x] Package / Level combined filtering and case-insensitive search.
+  - [x] Search-box query syntax for `tag:`, `pid:`, `level:`, exclusions, and field matching.
 - [x] Log parsing and interaction
   - [x] threadtime parsing, raw line preservation, and multiline log merging.
   - [x] Java stacktrace and AndroidRuntime `FATAL EXCEPTION` grouping.

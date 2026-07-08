@@ -15,7 +15,7 @@ If the state is `unauthorized`, check the phone authorization prompt. If it is `
 
 ## Live Logcat
 
-Select a device and start Live Logcat. CatScope reads `main`, `system`, and `crash` buffers in `threadtime` format. Use search, level, tag, exclude, regex, package, and PID filters to narrow the stream.
+Select a device and start Live Logcat. CatScope reads `main`, `system`, and `crash` buffers in `threadtime` format. Use search, level, tag, exclude, regex, package, and PID filters to narrow the stream. The search box also supports field queries such as `tag:ActivityManager`, `pid:1234`, `level:E`, and `-message:noise`.
 
 ## Package Selection and PID Tracking
 
