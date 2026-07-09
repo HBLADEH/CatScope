@@ -13,7 +13,7 @@
 构建工具：Vite
 ADB 调用：Go exec.Command 调用本地 adb
 构建调用：Go exec.Command 调用 gradlew / gradlew.bat
-本地存储：SQLite + JSON 配置文件
+本地存储：JSON 配置文件和 `.catscope-session` 文件（SQLite 为后续可选方向）
 日志渲染：虚拟滚动列表
 ```
 
@@ -67,8 +67,8 @@ Vite：开发和构建
 Pinia：全局状态管理
 Naive UI：主 UI 组件库
 VueUse：常用组合式工具函数
-Iconify / unplugin-icons：图标方案
-@tanstack/vue-virtual 或 vue-virtual-scroller：日志虚拟滚动
+@vicons/ionicons5：图标方案
+@tanstack/vue-virtual：日志虚拟滚动
 ```
 
 选择 Naive UI 的原因：

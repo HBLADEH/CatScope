@@ -1,6 +1,6 @@
 # CatScope Manual QA Checklist
 
-Use this checklist for v0.6.3-preview manual verification. CatScope is a lightweight Logcat troubleshooting workbench; do not treat missing full IDE behavior, Gradle Project Sync, or external AI API integration as regressions.
+Use this checklist for the current release candidate. Record the actual tag, commit, or package version in the QA notes. CatScope is a lightweight Logcat troubleshooting workbench; do not treat missing full IDE behavior, Gradle Project Sync, or external AI API integration as regressions.
 
 ## Test Matrix
 
@@ -120,13 +120,13 @@ Use this checklist for v0.6.3-preview manual verification. CatScope is a lightwe
 
 ## macOS Release Package
 
-- [ ] Run `scripts/build-macos.sh`.
-- [ ] Confirm `dist/CatScope-v0.6.3-preview-macos-universal.dmg` exists.
-- [ ] Confirm `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256` exists.
+- [ ] Run `scripts/build-macos.sh vX.Y.Z-preview`.
+- [ ] Confirm `dist/CatScope-v<version>-macos-universal.dmg` exists.
+- [ ] Confirm `dist/CatScope-v<version>-macos-universal.dmg.sha256` exists.
 - [ ] Run `lipo -archs build/bin/CatScope.app/Contents/MacOS/CatScope` and confirm `x86_64 arm64`.
 - [ ] Run `codesign -dv build/bin/CatScope.app` and confirm preview signing is ad-hoc/self-signed.
-- [ ] Run `hdiutil verify dist/CatScope-v0.6.3-preview-macos-universal.dmg`.
-- [ ] Run `cd dist` and then `shasum -a 256 -c CatScope-v0.6.3-preview-macos-universal.dmg.sha256`.
+- [ ] Run `hdiutil verify dist/CatScope-v<version>-macos-universal.dmg`.
+- [ ] Run `cd dist` and then `shasum -a 256 -c CatScope-v<version>-macos-universal.dmg.sha256`.
 
 ## Return to Live Mode
 

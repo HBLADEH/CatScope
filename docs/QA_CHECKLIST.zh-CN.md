@@ -1,6 +1,6 @@
 # CatScope 手工 QA 检查清单
 
-本清单用于 v0.6.3-preview 手工验收。CatScope 是轻量 Logcat 排障工作台；不要把完整 IDE、Gradle Project Sync 或外部 AI API 集成视为本阶段缺陷。
+本清单用于当前候选发布版本的手工验收。记录中必须写明实际测试的 tag、commit 或安装包版本。CatScope 是轻量 Logcat 排障工作台；不要把完整 IDE、Gradle Project Sync 或外部 AI API 集成视为本阶段缺陷。
 
 ## 测试矩阵
 
@@ -120,13 +120,13 @@
 
 ## macOS 发布包
 
-- [ ] 运行 `scripts/build-macos.sh`。
-- [ ] 确认 `dist/CatScope-v0.6.3-preview-macos-universal.dmg` 存在。
-- [ ] 确认 `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256` 存在。
+- [ ] 运行 `scripts/build-macos.sh vX.Y.Z-preview`。
+- [ ] 确认 `dist/CatScope-v<version>-macos-universal.dmg` 存在。
+- [ ] 确认 `dist/CatScope-v<version>-macos-universal.dmg.sha256` 存在。
 - [ ] 运行 `lipo -archs build/bin/CatScope.app/Contents/MacOS/CatScope` 并确认输出包含 `x86_64 arm64`。
 - [ ] 运行 `codesign -dv build/bin/CatScope.app` 并确认 preview 签名为 ad-hoc/self-signed。
-- [ ] 运行 `hdiutil verify dist/CatScope-v0.6.3-preview-macos-universal.dmg`。
-- [ ] 运行 `cd dist`，再运行 `shasum -a 256 -c CatScope-v0.6.3-preview-macos-universal.dmg.sha256`。
+- [ ] 运行 `hdiutil verify dist/CatScope-v<version>-macos-universal.dmg`。
+- [ ] 运行 `cd dist`，再运行 `shasum -a 256 -c CatScope-v<version>-macos-universal.dmg.sha256`。
 
 ## Return to Live Mode
 

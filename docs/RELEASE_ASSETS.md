@@ -7,8 +7,8 @@
 - Windows 预览版或正式版：
   - `CatScope.exe`
 - macOS universal 包：
-  - `CatScope-v0.6.3-preview-macos-universal.dmg`
-  - `CatScope-v0.6.3-preview-macos-universal.dmg.sha256`
+  - `CatScope-v<version>-macos-universal.dmg`
+  - `CatScope-v<version>-macos-universal.dmg.sha256`
 - README 文件：
   - `README.md`
   - `README.zh-CN.md`
@@ -20,18 +20,18 @@
 
 `Release` workflow 会同时构建 Windows 和 macOS 产物。
 
-- 推送预览版 tag，例如 `v0.6.3-preview`，会创建 draft prerelease。
-- 推送正式版 tag，例如 `v0.6.3`，会创建正式 GitHub Release。
+- 推送预览版 tag，例如 `vX.Y.Z-preview`，会创建 draft prerelease。
+- 推送正式版 tag，例如 `vX.Y.Z`，会创建正式 GitHub Release。
 - 如果想在 GitHub Actions 页面手动重跑，可以用 `workflow_dispatch`；打开 `draft_release` 可以先生成草稿，检查无误后再发布。
 
 示例：
 
 ```sh
-git tag v0.6.3-preview
-git push origin v0.6.3-preview
+git tag vX.Y.Z-preview
+git push origin vX.Y.Z-preview
 
-git tag v0.6.3
-git push origin v0.6.3
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 ## 校验值
@@ -47,9 +47,9 @@ Get-FileHash build/bin/CatScope.exe -Algorithm SHA256
 本地构建 macOS 包时运行：
 
 ```sh
-scripts/build-macos.sh
+scripts/build-macos.sh vX.Y.Z-preview
 cd dist
-shasum -a 256 -c CatScope-v0.6.3-preview-macos-universal.dmg.sha256
+shasum -a 256 -c CatScope-vX.Y.Z-preview-macos-universal.dmg.sha256
 ```
 
 macOS 脚本会生成同时支持 Intel Mac 和 Apple Silicon Mac 的 universal DMG，并自动写好 `.sha256` 文件。

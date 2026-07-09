@@ -1,4 +1,4 @@
-# CatScope v0.6.0-preview
+# CatScope vX.Y.Z
 
 ## Highlights
 
@@ -50,7 +50,7 @@
 
 ## Changelog
 
-- Prepared v0.6.0-preview release metadata.
+- Prepared vX.Y.Z release metadata.
 - Added Windows build and pre-release check scripts.
 - Added release notes, known issues, screenshot placeholders, and user guide docs.
 - Expanded README setup, Windows, privacy, and FAQ notes.

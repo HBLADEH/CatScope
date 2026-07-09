@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-v0.6.4-blue" alt="Preview status" />
+  <img src="https://img.shields.io/badge/status-preview-blue" alt="Preview status" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20preview-0078D4" alt="Platform: Windows and macOS preview" />
 </p>
 
@@ -60,7 +60,7 @@ CatScope keeps that workflow small and direct. The product boundary is intention
 
 ## Status
 
-Current version: **v0.6.3-preview**.
+CatScope is currently in **Preview**. Refer to GitHub Releases and the [changelog](./CHANGELOG.md) for the release version and checksums.
 
 CatScope is currently in Preview / Dev status. The core Logcat Viewer, Offline Log File Viewer, rule-based Crash / ANR / Native / JNI / Install Error Analyzer, local AI Context Generator, a minimal Build / Install / Launch workflow, lightweight Workspace / Filter Presets, and Session save / restore are available.
 
@@ -196,10 +196,10 @@ For a GitHub Release build, download the Windows artifact, extract it if it is a
 For a local universal preview package that runs on both Intel and Apple Silicon Macs:
 
 ```sh
-scripts/build-macos.sh
+scripts/build-macos.sh vX.Y.Z-preview
 ```
 
-The script runs Go tests, the frontend build, `wails build -platform darwin/universal -clean -skipbindings`, creates `dist/CatScope-v0.6.3-preview-macos-universal.dmg`, and writes `dist/CatScope-v0.6.3-preview-macos-universal.dmg.sha256`.
+The script runs Go tests, the frontend build, `wails build -platform darwin/universal -clean -skipbindings`, creates `dist/CatScope-v<version>-macos-universal.dmg`, and writes the matching `.sha256` file. Pass the release tag explicitly, for example `scripts/build-macos.sh vX.Y.Z-preview`.
 
 For a GitHub Release build, download the macOS DMG, open it, and drag `CatScope.app` to Applications. This preview is self-signed/ad-hoc signed and is not Apple-notarized yet, so macOS Gatekeeper may require opening it from Finder's context menu or allowing it in System Settings on first launch.
 
@@ -321,17 +321,13 @@ See [docs/screenshots/README.md](./docs/screenshots/README.md) for screenshot na
 
 ## Documentation
 
-- [Roadmap](./docs/ROADMAP.md)
-- [Architecture](./docs/ARCHITECTURE.md)
+The [documentation index](./docs/README.md) groups user, development, QA, and release materials. Common entry points:
+
 - [User Guide](./docs/USER_GUIDE.md)
+- [Architecture](./docs/ARCHITECTURE.md)
 - [Manual QA Checklist](./docs/QA_CHECKLIST.md)
-- [Known Issues](./docs/KNOWN_ISSUES.md)
-- [Release Notes Template](./docs/RELEASE_NOTES_TEMPLATE.md)
 - [Release Assets](./docs/RELEASE_ASSETS.md)
-- [Demo Recording Guide](./docs/DEMO.md)
-- [Screenshots](./docs/screenshots/README.md)
-- [MVP Tasks](./docs/MVP_TASKS.md)
-- [Codex Start Prompt](./docs/CODEX_START_PROMPT.md)
+- [Changelog](./CHANGELOG.md)
 
 ## Feedback and Bug Reports
 
@@ -349,7 +345,7 @@ For state restoration, filtering, workspace, or session-specific bugs, attach a 
 
 ## Contributing
 
-Issues, suggestions, and pull requests are welcome. The project is still early, so high-impact contributions include:
+Issues, suggestions, and pull requests are welcome. See the [contribution guide](./CONTRIBUTING.md) for local setup, checks, and PR requirements. The project is still early, so high-impact contributions include:
 
 - Logcat Viewer stability, performance, and interaction improvements.
 - adb compatibility across devices, ROMs, and emulators.
@@ -369,4 +365,4 @@ CatScope reads device information and live Logcat through local adb. Offline log
 
 ## License
 
-This repository does not include a license file yet. Before public distribution or accepting external contributions, add a `LICENSE` file and declare the license here.
+This repository does not include a license file yet. Before public distribution or external contributions, the copyright holder must choose and add a `LICENSE`; until then, do not assume the code can be redistributed or sublicensed.

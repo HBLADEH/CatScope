@@ -1,6 +1,6 @@
 # Known Issues
 
-CatScope v0.6.0-preview is a lightweight Android Logcat debugging workbench, not a complete IDE. The following limitations are expected for this preview stage:
+CatScope is a lightweight Android Logcat debugging workbench, not a complete IDE. The following limitations are expected during the preview stage:
 
 - CatScope is not an Android Studio replacement.
 - Gradle Project Sync is not supported.
