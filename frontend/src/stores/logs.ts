@@ -553,6 +553,19 @@ export const useLogStore = defineStore('logs', () => {
     regexEnabled.value = false
   }
 
+  function setTagSearchFilter(tag: string, negative: boolean) {
+    const normalizedTag = tag.trim()
+    if (!normalizedTag) {
+      return
+    }
+    const tokens = tokenizeQuery(search.value)
+    const nextToken = `${negative ? '-' : ''}tag:${formatQueryValue(normalizedTag)}`
+    if (!tokens.some((token) => isSameTagQueryToken(token, normalizedTag, negative))) {
+      tokens.push(nextToken)
+    }
+    search.value = tokens.join(' ')
+  }
+
   async function exportFiltered() {
     error.value = ''
     notice.value = ''
@@ -1304,6 +1317,25 @@ export const useLogStore = defineStore('logs', () => {
     return trimmed
   }
 
+  function isTagQueryToken(value: string) {
+    return /^-?tag(~:|\^:|\^=|~=|=|:).+$/i.test(value)
+  }
+
+  function isSameTagQueryToken(value: string, tag: string, negative: boolean) {
+    const match = value.match(/^(-?)tag:(.+)$/i)
+    if (!match) {
+      return false
+    }
+    return (match[1] === '-') === negative && unquote(match[2]).toLowerCase() === tag.toLowerCase()
+  }
+
+  function formatQueryValue(value: string) {
+    if (!/[\s"']/.test(value)) {
+      return value
+    }
+    return `"${value.replace(/"/g, '')}"`
+  }
+
   function normalizeQueryField(field: string): QueryField {
     switch (field.toLowerCase()) {
       case 'msg':
@@ -1360,7 +1392,14 @@ export const useLogStore = defineStore('logs', () => {
   }
 
   function matchesQueryFilters(entry: LogEntry, filters: QueryFilter[]) {
-    return filters.every((filter) => {
+    const includeTagFilters = filters.filter((filter) => filter.field === 'tag' && !filter.negative)
+    const otherFilters = filters.filter((filter) => filter.field !== 'tag' || filter.negative)
+
+    if (includeTagFilters.length > 0 && !includeTagFilters.some((filter) => matchesQueryFilter(entry, filter))) {
+      return false
+    }
+
+    return otherFilters.every((filter) => {
       const matched = matchesQueryFilter(entry, filter)
       return filter.negative ? !matched : matched
     })
@@ -1510,6 +1549,7 @@ export const useLogStore = defineStore('logs', () => {
     stop,
     clear,
     clearSearch,
+    setTagSearchFilter,
     exportFiltered,
     exportFilteredJSONL,
     saveSession,

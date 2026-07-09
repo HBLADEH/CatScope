@@ -348,37 +348,39 @@ onUnmounted(() => {
                   {{ store.paused ? t('toolbar.resume') : t('toolbar.pause') }}
                 </n-button>
 
-                <n-input v-model:value="store.search" class="toolbar-search" clearable :placeholder="t('toolbar.searchPlaceholder')" />
+                <div class="toolbar-filter-group">
+                  <n-input v-model:value="store.search" class="toolbar-search" clearable :placeholder="t('toolbar.searchPlaceholder')" />
 
-                <n-popover trigger="click" placement="bottom-end" raw>
-                  <template #trigger>
-                    <n-button class="level-filter-button">
-                      <span>{{ levelSummary }}</span>
-                      <n-icon class="level-filter-caret" :component="ChevronDownOutline" />
-                    </n-button>
-                  </template>
+                  <n-popover trigger="click" placement="bottom-end" raw>
+                    <template #trigger>
+                      <n-button class="level-filter-button">
+                        <span>{{ levelSummary }}</span>
+                        <n-icon class="level-filter-caret" :component="ChevronDownOutline" />
+                      </n-button>
+                    </template>
 
-                  <div class="level-filter-popover">
-                    <div class="level-filter-actions">
-                      <n-button size="tiny" tertiary :disabled="allLevelsSelected" @click="setAllLevels">
-                        {{ t('common.all') }}
-                      </n-button>
-                      <n-button size="tiny" tertiary :disabled="store.levels.length === 0" @click="clearLevels">
-                        {{ t('common.none') }}
-                      </n-button>
+                    <div class="level-filter-popover">
+                      <div class="level-filter-actions">
+                        <n-button size="tiny" tertiary :disabled="allLevelsSelected" @click="setAllLevels">
+                          {{ t('common.all') }}
+                        </n-button>
+                        <n-button size="tiny" tertiary :disabled="store.levels.length === 0" @click="clearLevels">
+                          {{ t('common.none') }}
+                        </n-button>
+                      </div>
+                      <div class="level-filter-grid">
+                        <n-checkbox
+                          v-for="level in allLogLevels"
+                          :key="level"
+                          :checked="store.levels.includes(level)"
+                          @update:checked="(checked: boolean) => toggleLevel(level, checked)"
+                        >
+                          <span :class="`level level-${level}`">{{ level }}</span>
+                        </n-checkbox>
+                      </div>
                     </div>
-                    <div class="level-filter-grid">
-                      <n-checkbox
-                        v-for="level in allLogLevels"
-                        :key="level"
-                        :checked="store.levels.includes(level)"
-                        @update:checked="(checked: boolean) => toggleLevel(level, checked)"
-                      >
-                        <span :class="`level level-${level}`">{{ level }}</span>
-                      </n-checkbox>
-                    </div>
-                  </div>
-                </n-popover>
+                  </n-popover>
+                </div>
 
                 <n-button tertiary @click="store.clear">
                   <template #icon>

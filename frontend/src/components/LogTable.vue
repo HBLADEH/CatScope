@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { CopyOutline } from '@vicons/ionicons5'
-import { NIcon, useMessage } from 'naive-ui'
+import { NIcon, useMessage, type DropdownOption } from 'naive-ui'
 import { ClipboardSetText } from '../../wailsjs/runtime/runtime'
 
 import { t } from '@/i18n'
@@ -15,6 +15,10 @@ const message = useMessage()
 const parentRef = ref<HTMLElement | null>(null)
 const selectedLogIDs = ref<Set<number>>(new Set())
 const lastSelectedIndex = ref<number | null>(null)
+const tagMenuOpen = ref(false)
+const tagMenuX = ref(0)
+const tagMenuY = ref(0)
+const tagMenuTag = ref('')
 
 const rowVirtualizer = useVirtualizer(
   computed(() => ({
@@ -29,6 +33,10 @@ const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems())
 const totalSize = computed(() => rowVirtualizer.value.getTotalSize())
 const selectedLogs = computed(() => store.filteredLogs.filter((entry) => selectedLogIDs.value.has(entry.id)))
 const selectedCount = computed(() => selectedLogs.value.length)
+const tagMenuOptions = computed<DropdownOption[]>(() => [
+  { label: t('table.filterTagOnly', { tag: tagMenuTag.value }), key: 'include' },
+  { label: t('table.filterTagExclude', { tag: tagMenuTag.value }), key: 'exclude' }
+])
 
 const scrollToBottom = useDebounceFn(() => {
   if (store.filteredLogs.length === 0) {
@@ -98,6 +106,28 @@ function clearSelection() {
   lastSelectedIndex.value = null
 }
 
+function handleTagContextMenu(event: MouseEvent, entry: LogEntry) {
+  const tag = entry.tag?.trim()
+  if (!tag) {
+    return
+  }
+  tagMenuTag.value = tag
+  tagMenuX.value = event.clientX
+  tagMenuY.value = event.clientY
+  tagMenuOpen.value = true
+}
+
+function handleTagMenuSelect(key: string | number) {
+  const tag = tagMenuTag.value
+  if (!tag) {
+    return
+  }
+  const negative = key === 'exclude'
+  store.setTagSearchFilter(tag, negative)
+  tagMenuOpen.value = false
+  message.success(t(negative ? 'table.filterTagExcludeApplied' : 'table.filterTagOnlyApplied', { tag }))
+}
+
 function formatLogEntry(entry: LogEntry) {
   const primary = entry.raw || [
     entry.timestamp || '-',
@@ -126,6 +156,17 @@ async function copySelectedLogs() {
 
 <template>
   <section class="log-panel">
+    <n-dropdown
+      trigger="manual"
+      placement="bottom-start"
+      :show="tagMenuOpen"
+      :x="tagMenuX"
+      :y="tagMenuY"
+      :options="tagMenuOptions"
+      @select="handleTagMenuSelect"
+      @clickoutside="tagMenuOpen = false"
+    />
+
     <div class="log-actions">
       <span>{{ t('table.selected', { count: selectedCount }) }}</span>
       <div class="log-action-buttons">
@@ -199,7 +240,12 @@ async function copySelectedLogs() {
           <span class="mono">{{ store.filteredLogs[virtualRow.index].pid || '-' }}</span>
           <span class="mono">{{ store.filteredLogs[virtualRow.index].tid || '-' }}</span>
           <span class="package-cell">{{ store.filteredLogs[virtualRow.index].packageName || '-' }}</span>
-          <span class="tag-cell">{{ store.filteredLogs[virtualRow.index].tag || '-' }}</span>
+          <span
+            class="tag-cell tag-cell-action"
+            @contextmenu.stop.prevent="handleTagContextMenu($event, store.filteredLogs[virtualRow.index])"
+          >
+            {{ store.filteredLogs[virtualRow.index].tag || '-' }}
+          </span>
           <span class="message-cell">{{ store.filteredLogs[virtualRow.index].message }}</span>
         </button>
       </div>

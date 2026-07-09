@@ -167,7 +167,7 @@ input {
 
 .toolbar-controls {
   display: grid;
-  grid-template-columns: minmax(500px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(460px, 0.78fr) minmax(0, 1.22fr);
   gap: 10px;
   align-items: center;
   min-width: 0;
@@ -190,6 +190,15 @@ input {
   justify-content: flex-end;
 }
 
+.toolbar-filter-group {
+  display: grid;
+  flex: 1 1 480px;
+  grid-template-columns: minmax(260px, 1fr) 132px;
+  gap: 8px;
+  align-items: center;
+  min-width: min(100%, 390px);
+}
+
 .device-select {
   flex: 1 1 190px;
 }
@@ -203,9 +212,9 @@ input {
 }
 
 .toolbar-search {
-  flex: 1 1 240px;
+  width: 100%;
   min-width: 0;
-  max-width: 360px;
+  max-width: none;
 }
 
 .pause-button {
@@ -718,6 +727,18 @@ dd {
   font-weight: 650;
 }
 
+.tag-cell-action {
+  border-radius: 4px;
+  cursor: context-menu;
+}
+
+.tag-cell-action:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
 .empty-log,
 .empty-copy {
   display: grid;
@@ -898,6 +919,10 @@ dd {
   .toolbar-action-group {
     justify-content: flex-start;
   }
+
+  .toolbar-filter-group {
+    flex-basis: 100%;
+  }
 }
 
 @media (max-width: 1280px) {
@@ -945,9 +970,14 @@ dd {
     max-width: none;
   }
 
-  .toolbar-search {
+  .toolbar-filter-group {
     flex-basis: 100%;
-    max-width: none;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .level-filter-button {
+    width: 100%;
   }
 
   .workspace {
