@@ -903,6 +903,54 @@ dd {
   white-space: nowrap;
 }
 
+.update-setting-row {
+  display: grid;
+  gap: 6px;
+}
+
+.update-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.update-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.update-version-line {
+  margin-top: 0;
+  font-weight: 600;
+}
+
+.update-release-notes {
+  max-height: 320px;
+  margin: 14px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.update-hint {
+  color: var(--text-muted);
+}
+
+.update-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 @media (max-width: 1400px) {
   .toolbar {
     grid-template-columns: 1fr;

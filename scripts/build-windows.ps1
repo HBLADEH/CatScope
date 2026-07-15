@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $Root = Split-Path -Parent $PSScriptRoot
+$Version = "v" + (Get-Content -Path (Join-Path $Root "internal\appversion\version.txt") -Raw).Trim()
 
 function Invoke-CheckedCommand {
     param(
@@ -27,6 +28,7 @@ function Invoke-CheckedCommand {
     }
 }
 
+Invoke-CheckedCommand -Name "Version consistency" -FilePath "go" -Arguments @("run", "scripts/check-version.go", $Version)
 Invoke-CheckedCommand -Name "Go tests" -FilePath "go" -Arguments @("test", "./...")
 Invoke-CheckedCommand -Name "Frontend build" -FilePath "npm" -Arguments @("run", "build") -WorkingDirectory (Join-Path $Root "frontend")
 Invoke-CheckedCommand -Name "Wails Windows build" -FilePath "wails" -Arguments @("build")

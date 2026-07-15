@@ -51,6 +51,9 @@ jobs:
           go-version: "1.23.x"
           cache: true
 
+      - name: Verify version consistency
+        run: go run scripts/check-version.go "$RELEASE_TAG"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -108,6 +111,10 @@ jobs:
         with:
           go-version: "1.23.x"
           cache: true
+
+      - name: Verify version consistency
+        shell: pwsh
+        run: go run scripts/check-version.go "$env:RELEASE_TAG"
 
       - name: Set up Node
         uses: actions/setup-node@v4

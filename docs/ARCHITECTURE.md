@@ -337,6 +337,12 @@ adb -s <serial> shell cmd package resolve-activity --brief <package>
 - 提取 Build / Install 输出
 - 生成 Markdown 分析材料
 
+### 3.11 Update Manager
+
+`internal/update` 负责读取 GitHub Releases、按正式版或 Preview 通道比较语义版本，并选择当前平台对应的发布资产。Windows 自动安装流程只接受 GitHub HTTPS 下载地址，下载 EXE 后必须通过同名 `.sha256` 文件校验。
+
+Windows 不能覆盖运行中的 EXE，因此主程序会把自身复制到系统临时目录并以 updater 模式启动。updater 等待主程序退出后，先保留旧 EXE、替换新 EXE、重新启动 CatScope，再由新进程清理临时目录。发布物仍然是单个 EXE。macOS 当前只提供更新检测和 Release 页面入口。
+
 ## 4. 前端模块
 
 ### 4.1 页面布局

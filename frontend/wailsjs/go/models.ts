@@ -682,6 +682,47 @@ export namespace storage {
 
 }
 
+export namespace update {
+
+	export class Info {
+	    currentVersion: string;
+	    latestVersion: string;
+	    available: boolean;
+	    prerelease: boolean;
+	    releaseName: string;
+	    releaseNotes: string;
+	    publishedAt: string;
+	    releaseUrl: string;
+	    assetUrl?: string;
+	    assetName?: string;
+	    checksumUrl?: string;
+	    canAutoInstall: boolean;
+	    autoInstallHint?: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Info(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.available = source["available"];
+	        this.prerelease = source["prerelease"];
+	        this.releaseName = source["releaseName"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.publishedAt = source["publishedAt"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.assetUrl = source["assetUrl"];
+	        this.assetName = source["assetName"];
+	        this.checksumUrl = source["checksumUrl"];
+	        this.canAutoInstall = source["canAutoInstall"];
+	        this.autoInstallHint = source["autoInstallHint"];
+	    }
+	}
+
+}
+
 export namespace workspace {
 	
 	export class FilterPreset {
@@ -847,4 +888,3 @@ export namespace workspace {
 	}
 
 }
-

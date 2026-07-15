@@ -13,6 +13,12 @@ CatScope is a lightweight Android Logcat debugging workbench. It helps with live
 
 If the state is `unauthorized`, check the phone authorization prompt. If it is `offline`, reconnect the device or restart adb with `adb kill-server`.
 
+## Check and Install CatScope Updates
+
+CatScope checks the latest stable GitHub Release after startup by default. In the App Updates section, you can disable automatic checks, check manually, or opt into Preview releases.
+
+When a Windows portable build finds an update, Install and Restart downloads the matching EXE and verifies it against the release's `.sha256` asset. CatScope then exits, a temporary updater replaces the original EXE, and the new version starts. Distribution remains a single EXE. If the EXE directory is not writable, use View Release for a manual download. macOS currently detects updates but does not replace the app bundle in place.
+
 ## Live Logcat
 
 Select a device and start Live Logcat. CatScope reads `main`, `system`, and `crash` buffers in `threadtime` format. Use search, level, tag, exclude, regex, package, and PID filters to narrow the stream. The search box also supports field queries such as `tag:ActivityManager`, `pid:1234`, `level:E`, and `-message:noise`.

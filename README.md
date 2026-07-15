@@ -73,6 +73,7 @@ CatScope is a lightweight Android Logcat debugging workbench. It is not an Andro
 - [x] Desktop app foundation
   - [x] Wails v2 desktop app with a Go backend.
   - [x] Vue 3 + TypeScript frontend.
+  - [x] Startup update checks against GitHub Releases, with verified install-and-restart updates on Windows.
 - [x] ADB and device management
   - [x] ADB discovery from user configuration, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `PATH`.
   - [x] Device list parsing with clear `device`, `offline`, `unauthorized`, and `unknown` states.
@@ -190,6 +191,8 @@ scripts\build-windows.ps1
 ```
 
 For a GitHub Release build, download the Windows artifact, extract it if it is a portable archive, and run `CatScope.exe`. Live Logcat needs a device or emulator with USB debugging enabled. On the first USB connection, Android shows an authorization dialog on the device; accept it, then refresh the CatScope device list.
+
+CatScope checks for stable updates after startup by default. Use the App Updates section in the sidebar to check manually or opt into Preview releases. On Windows, the portable EXE can download the new release, verify its SHA256 checksum, replace itself after exit, and restart. If the current directory is not writable, or on platforms that do not yet support in-app replacement, use View Release for a manual download.
 
 ### macOS Preview Usage
 

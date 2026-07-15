@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CatScope"
-VERSION="${1:-v0.6.3-preview}"
+VERSION="${1:-v0.6.6}"
 PRODUCT_VERSION="${VERSION#v}"
 DIST_DIR="$ROOT/dist"
 STAGING_DIR="$DIST_DIR/macos-dmg-staging"
@@ -24,6 +24,7 @@ fi
 
 cd "$ROOT"
 
+run go run scripts/check-version.go "$VERSION"
 run go test ./...
 run npm run build --prefix frontend
 run wails build -platform darwin/universal -clean -skipbindings

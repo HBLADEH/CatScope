@@ -1,0 +1,16 @@
+{
+	"fixed": {
+		"file_version": "{{.Info.ProductVersion}}.0",
+		"product_version": "{{.Info.ProductVersion}}.0"
+	},
+	"info": {
+		"0409": {
+			"ProductVersion": "{{.Info.ProductVersion}}",
+			"CompanyName": "{{.Info.CompanyName}}",
+			"FileDescription": "{{.Info.ProductName}}",
+			"LegalCopyright": "{{.Info.Copyright}}",
+			"ProductName": "{{.Info.ProductName}}",
+			"Comments": "{{.Info.Comments}}"
+		}
+	}
+}

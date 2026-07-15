@@ -9,6 +9,22 @@ export interface AndroidDevice {
   isEmulator?: boolean
 }
 
+export interface UpdateInfo {
+  currentVersion: string
+  latestVersion: string
+  available: boolean
+  prerelease: boolean
+  releaseName: string
+  releaseNotes: string
+  publishedAt: string
+  releaseUrl: string
+  assetUrl?: string
+  assetName?: string
+  checksumUrl?: string
+  canAutoInstall: boolean
+  autoInstallHint?: string
+}
+
 export interface InstalledPackage {
   packageName: string
   label?: string
