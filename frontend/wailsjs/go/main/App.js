@@ -14,6 +14,10 @@ export function BuildInstallLaunch(arg1) {
   return window['go']['main']['App']['BuildInstallLaunch'](arg1);
 }
 
+export function CheckForUpdates(arg1) {
+  return window['go']['main']['App']['CheckForUpdates'](arg1);
+}
+
 export function ClearLogs() {
   return window['go']['main']['App']['ClearLogs']();
 }
@@ -54,6 +58,10 @@ export function GenerateAIContext(arg1, arg2) {
   return window['go']['main']['App']['GenerateAIContext'](arg1, arg2);
 }
 
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
 export function GetCurrentSessionSummary() {
   return window['go']['main']['App']['GetCurrentSessionSummary']();
 }
@@ -80,6 +88,10 @@ export function GetProjectConfig() {
 
 export function InstallAPK(arg1, arg2) {
   return window['go']['main']['App']['InstallAPK'](arg1, arg2);
+}
+
+export function InstallUpdate(arg1) {
+  return window['go']['main']['App']['InstallUpdate'](arg1);
 }
 
 export function LaunchApp(arg1) {
@@ -112,6 +124,10 @@ export function LoadOfflineLogFile(arg1) {
 
 export function OpenLogFile(arg1) {
   return window['go']['main']['App']['OpenLogFile'](arg1);
+}
+
+export function OpenReleasePage(arg1) {
+  return window['go']['main']['App']['OpenReleasePage'](arg1);
 }
 
 export function OpenSession(arg1) {

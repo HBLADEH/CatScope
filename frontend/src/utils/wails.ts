@@ -20,7 +20,8 @@ import type {
   SessionSaveOptions,
   SessionSummary,
   WorkspaceConfig,
-  LogStatus
+  LogStatus,
+  UpdateInfo
 } from '@/types/backend'
 
 async function call<T>(method: string, ...args: unknown[]): Promise<T> {
@@ -33,6 +34,10 @@ async function call<T>(method: string, ...args: unknown[]): Promise<T> {
 }
 
 export const backend = {
+  getAppVersion: () => call<string>('GetAppVersion'),
+  checkForUpdates: (includePrerelease = false) => call<UpdateInfo>('CheckForUpdates', includePrerelease),
+  installUpdate: (includePrerelease = false) => call<void>('InstallUpdate', includePrerelease),
+  openReleasePage: (releaseUrl = '') => call<void>('OpenReleasePage', releaseUrl),
   findADB: (configuredPath = '') => call<string>('FindADB', configuredPath),
   selectADBExecutable: () => call<string>('SelectADBExecutable'),
   useADBPath: (configuredPath = '') => call<string>('UseADBPath', configuredPath),

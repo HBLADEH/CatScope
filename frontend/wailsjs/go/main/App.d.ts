@@ -4,6 +4,7 @@ import {logcat} from '../models';
 import {build} from '../models';
 import {workspace} from '../models';
 import {main} from '../models';
+import {update} from '../models';
 import {ai} from '../models';
 import {storage} from '../models';
 import {adb} from '../models';
@@ -13,6 +14,8 @@ export function AnalyzeLogs(arg1:Array<logcat.LogEntry>):Promise<Array<logcat.An
 export function BuildDebug(arg1:string):Promise<build.BuildResult>;
 
 export function BuildInstallLaunch(arg1:workspace.ProjectConfig):Promise<main.BuildInstallLaunchResult>;
+
+export function CheckForUpdates(arg1:boolean):Promise<update.Info>;
 
 export function ClearLogs():Promise<void>;
 
@@ -34,6 +37,8 @@ export function FindLatestAPK(arg1:string):Promise<build.APKInfo>;
 
 export function GenerateAIContext(arg1:string,arg2:ai.AIContextOptions):Promise<string>;
 
+export function GetAppVersion():Promise<string>;
+
 export function GetCurrentSessionSummary():Promise<storage.SessionSummary>;
 
 export function GetDeviceInfo(arg1:string):Promise<adb.AndroidDevice>;
@@ -47,6 +52,8 @@ export function GetPackagePIDState():Promise<logcat.PackagePIDState>;
 export function GetProjectConfig():Promise<workspace.ProjectConfig>;
 
 export function InstallAPK(arg1:string,arg2:adb.InstallOptions):Promise<adb.InstallResult>;
+
+export function InstallUpdate(arg1:boolean):Promise<void>;
 
 export function LaunchApp(arg1:string):Promise<adb.LaunchResult>;
 
@@ -63,6 +70,8 @@ export function LoadConfig():Promise<workspace.AppConfig>;
 export function LoadOfflineLogFile(arg1:string):Promise<logcat.OfflineLogFileResult>;
 
 export function OpenLogFile(arg1:string):Promise<logcat.OfflineLogFileResult>;
+
+export function OpenReleasePage(arg1:string):Promise<void>;
 
 export function OpenSession(arg1:string):Promise<main.SessionOpenResult>;
 

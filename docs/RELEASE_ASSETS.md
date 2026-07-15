@@ -5,7 +5,8 @@
 ## 必传产物
 
 - Windows 预览版或正式版：
-  - `CatScope.exe`
+  - `CatScope-v<version>-windows-amd64.exe`
+  - `CatScope-v<version>-windows-amd64.exe.sha256`
 - macOS universal 包：
   - `CatScope-v<version>-macos-universal.dmg`
   - `CatScope-v<version>-macos-universal.dmg.sha256`
@@ -19,6 +20,8 @@
 ## GitHub Actions 发版流程
 
 `Release` workflow 会同时构建 Windows 和 macOS 产物。
+
+Windows 应用内升级依赖版本化 EXE 与同名 `.sha256` 文件，两个资产缺一不可。构建前 workflow 会运行版本一致性检查，确保 tag、运行时版本、Windows 资源版本和前端包版本相同。
 
 - 推送预览版 tag，例如 `vX.Y.Z-preview`，会创建 draft prerelease。
 - 推送正式版 tag，例如 `vX.Y.Z`，会创建正式 GitHub Release。

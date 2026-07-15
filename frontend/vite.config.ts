@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [vue()],
   build: {
-    emptyOutDir: false
+    emptyOutDir: true
   },
   resolve: {
     alias: {

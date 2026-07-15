@@ -73,6 +73,7 @@ CatScope 是轻量 Android Logcat 调试工作台，不是 Android Studio 替代
 - [x] 桌面应用基础
   - [x] Wails v2 桌面应用，Go 后端。
   - [x] Vue 3 + TypeScript 前端。
+  - [x] 启动后自动检测 GitHub Release 更新，Windows 支持校验后安装并重启。
 - [x] ADB 与设备管理
   - [x] ADB 自动查找，支持用户配置、`ANDROID_HOME`、`ANDROID_SDK_ROOT` 和 `PATH`。
   - [x] 设备列表解析，区分 `device`、`offline`、`unauthorized` 和 `unknown`。
@@ -190,6 +191,8 @@ scripts\build-windows.ps1
 ```
 
 如果使用 GitHub Release 包，请下载 Windows 产物；若是 portable 压缩包，先解压，再运行 `CatScope.exe`。实时 Logcat 需要连接已开启 USB 调试的真机或模拟器。第一次 USB 连接时，Android 设备会弹出授权确认，请允许后再刷新 CatScope 设备列表。
+
+CatScope 默认会在启动后检查正式版更新，也可以在左侧“应用更新”区域手动检查或接收 Preview。Windows 便携版支持下载新 EXE、校验 Release 中的 SHA256、退出后替换原文件并重新启动。如果当前目录不可写，或 macOS 暂不支持应用内替换，CatScope 会保留“查看 Release”的手动下载入口。
 
 ### macOS Preview 使用说明
 

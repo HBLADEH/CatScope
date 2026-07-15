@@ -31,6 +31,8 @@ import LogDetails from '@/components/LogDetails.vue'
 import LogTable from '@/components/LogTable.vue'
 import { currentLocale, languageOptions, localizePresetName, setLocale, t } from '@/i18n'
 import { useLogStore } from '@/stores/logs'
+import type { UpdateInfo } from '@/types/backend'
+import { backend } from '@/utils/wails'
 
 const store = useLogStore()
 const sidebarCollapsed = ref(false)
@@ -38,6 +40,21 @@ const detailsPanelOpen = ref(false)
 const detailsPanelTab = ref<'details' | 'analysis'>('details')
 const allLogLevels = ['V', 'D', 'I', 'W', 'E', 'F']
 type ThemeMode = 'system' | 'light' | 'dark'
+
+function readBooleanSetting(key: string, defaultValue: boolean) {
+  const value = localStorage.getItem(key)
+  return value === null ? defaultValue : value === 'true'
+}
+
+const appVersion = ref('')
+const autoCheckUpdates = ref(readBooleanSetting('catscope.autoCheckUpdates', true))
+const includePrereleaseUpdates = ref(readBooleanSetting('catscope.includePrereleaseUpdates', false))
+const checkingUpdates = ref(false)
+const installingUpdate = ref(false)
+const updateInfo = ref<UpdateInfo | null>(null)
+const updateError = ref('')
+const updateModalOpen = ref(false)
+let updateCheckTimer: number | undefined
 
 function readThemeMode(): ThemeMode {
   const value = localStorage.getItem('catscope.themeMode')
@@ -192,6 +209,49 @@ function handleLocaleChange(value: string | number | null) {
   }
 }
 
+async function checkForUpdates(manual = true) {
+  if (checkingUpdates.value) {
+    return
+  }
+  checkingUpdates.value = true
+  updateError.value = ''
+  try {
+    const info = await backend.checkForUpdates(includePrereleaseUpdates.value)
+    updateInfo.value = info
+    appVersion.value = info.currentVersion
+    if (info.available) {
+      updateModalOpen.value = true
+    } else if (manual) {
+      updateModalOpen.value = true
+    }
+  } catch (error) {
+    updateError.value = error instanceof Error ? error.message : String(error)
+    if (manual) {
+      updateModalOpen.value = true
+    }
+  } finally {
+    checkingUpdates.value = false
+  }
+}
+
+async function installAvailableUpdate() {
+  if (installingUpdate.value) {
+    return
+  }
+  installingUpdate.value = true
+  updateError.value = ''
+  try {
+    await backend.installUpdate(includePrereleaseUpdates.value)
+  } catch (error) {
+    updateError.value = error instanceof Error ? error.message : String(error)
+    installingUpdate.value = false
+  }
+}
+
+function openReleasePage() {
+  void backend.openReleasePage(updateInfo.value?.releaseUrl || '')
+}
+
 function buildStateLabel(success?: boolean) {
   if (success === undefined) {
     return '-'
@@ -252,6 +312,14 @@ watch(
   { immediate: true }
 )
 
+watch(autoCheckUpdates, (enabled) => {
+  localStorage.setItem('catscope.autoCheckUpdates', String(enabled))
+})
+
+watch(includePrereleaseUpdates, (enabled) => {
+  localStorage.setItem('catscope.includePrereleaseUpdates', String(enabled))
+})
+
 watch(
   () => store.selectedLog?.id,
   (id) => {
@@ -269,11 +337,22 @@ onMounted(() => {
   }
   void store.loadConfig()
   void store.refreshDevices()
+  void backend.getAppVersion().then((version) => {
+    appVersion.value = version
+  })
+  if (autoCheckUpdates.value) {
+    updateCheckTimer = window.setTimeout(() => {
+      void checkForUpdates(false)
+    }, 1500)
+  }
 })
 
 onUnmounted(() => {
   window.matchMedia?.('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemThemeChange)
   store.stopPolling()
+  if (updateCheckTimer !== undefined) {
+    window.clearTimeout(updateCheckTimer)
+  }
 })
 </script>
 
@@ -440,6 +519,21 @@ onUnmounted(() => {
                   size="small"
                   @update:value="handleLocaleChange"
                 />
+                <h2>{{ t('update.title') }}</h2>
+                <div class="update-setting-row">
+                  <n-checkbox v-model:checked="autoCheckUpdates">
+                    {{ t('update.autoCheck') }}
+                  </n-checkbox>
+                  <n-checkbox v-model:checked="includePrereleaseUpdates">
+                    {{ t('update.includePrerelease') }}
+                  </n-checkbox>
+                </div>
+                <div class="update-action-row">
+                  <span>{{ t('update.currentVersion', { version: appVersion || '-' }) }}</span>
+                  <n-button size="small" tertiary :loading="checkingUpdates" @click="checkForUpdates(true)">
+                    {{ t('update.checkNow') }}
+                  </n-button>
+                </div>
               </section>
 
               <section class="source-panel">
@@ -816,6 +910,41 @@ onUnmounted(() => {
               </div>
             </n-drawer-content>
           </n-drawer>
+
+          <n-modal v-model:show="updateModalOpen" preset="card" class="update-modal" :title="t('update.dialogTitle')">
+            <n-alert v-if="updateError" type="error" :show-icon="false">
+              {{ updateError }}
+            </n-alert>
+
+            <template v-else-if="updateInfo?.available">
+              <p class="update-version-line">
+                {{ t('update.available', { current: updateInfo.currentVersion, latest: updateInfo.latestVersion }) }}
+              </p>
+              <n-tag v-if="updateInfo.prerelease" type="warning" size="small">Preview</n-tag>
+              <pre v-if="updateInfo.releaseNotes" class="update-release-notes">{{ updateInfo.releaseNotes }}</pre>
+              <p v-if="updateInfo.autoInstallHint" class="update-hint">{{ updateInfo.autoInstallHint }}</p>
+            </template>
+
+            <p v-else-if="updateInfo">{{ t('update.upToDate', { version: updateInfo.currentVersion }) }}</p>
+            <p v-else-if="checkingUpdates">{{ t('update.checking') }}</p>
+
+            <template #footer>
+              <div class="update-dialog-actions">
+                <n-button @click="updateModalOpen = false">{{ t('update.later') }}</n-button>
+                <n-button v-if="updateInfo?.available" tertiary @click="openReleasePage">
+                  {{ t('update.viewRelease') }}
+                </n-button>
+                <n-button
+                  v-if="updateInfo?.canAutoInstall"
+                  type="primary"
+                  :loading="installingUpdate"
+                  @click="installAvailableUpdate"
+                >
+                  {{ installingUpdate ? t('update.installing') : t('update.installAndRestart') }}
+                </n-button>
+              </div>
+            </template>
+          </n-modal>
         </main>
       </n-message-provider>
     </n-dialog-provider>

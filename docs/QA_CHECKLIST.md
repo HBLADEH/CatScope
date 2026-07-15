@@ -19,6 +19,16 @@ Use this checklist for the current release candidate. Record the actual tag, com
 - [ ] Confirm the app remains usable when adb is missing or misconfigured and shows a recoverable error.
 - [ ] Confirm the version displayed in the app or release package matches the tested build.
 
+## App Updates
+
+- [ ] Confirm the version in the sidebar matches the Release tag.
+- [ ] Toggle startup update checks off and on, restart, and confirm the preference is retained.
+- [ ] Confirm the stable channel ignores Preview-only updates and the Preview option can discover them.
+- [ ] Confirm a manual check reports clearly when the current version is up to date.
+- [ ] On Windows, run an older EXE against a newer Release and verify download, SHA256 validation, replacement after exit, and restart.
+- [ ] Confirm a non-writable directory or missing EXE / SHA256 asset produces a recoverable failure with a manual Release-page fallback.
+- [ ] On macOS, confirm CatScope only reports the update and opens the Release page without replacing the app bundle.
+
 ## ADB Device Connection
 
 - [ ] Connect an Android device or start an emulator.

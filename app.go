@@ -14,9 +14,11 @@ import (
 
 	"catscope/internal/adb"
 	"catscope/internal/ai"
+	"catscope/internal/appversion"
 	"catscope/internal/build"
 	"catscope/internal/logcat"
 	"catscope/internal/storage"
+	appupdate "catscope/internal/update"
 	"catscope/internal/workspace"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -46,6 +48,8 @@ type App struct {
 
 	analysisMu sync.RWMutex
 	analysis   map[string]logcat.AnalysisResult
+
+	updateMu sync.Mutex
 }
 
 type BuildInstallLaunchResult struct {
@@ -83,6 +87,61 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) GetAppVersion() string {
+	return appversion.Version
+}
+
+func (a *App) CheckForUpdates(includePrerelease bool) (appupdate.Info, error) {
+	checker := appupdate.NewChecker(appversion.Version)
+	info, err := checker.Check(a.context(), includePrerelease)
+	if err != nil {
+		return info, err
+	}
+	return info, nil
+}
+
+func (a *App) InstallUpdate(includePrerelease bool) error {
+	a.updateMu.Lock()
+	defer a.updateMu.Unlock()
+
+	checker := appupdate.NewChecker(appversion.Version)
+	ctx, cancel := context.WithTimeout(a.context(), 10*time.Minute)
+	defer cancel()
+
+	info, err := checker.Check(ctx, includePrerelease)
+	if err != nil {
+		return err
+	}
+	if !info.Available {
+		return errors.New("当前已经是最新版本")
+	}
+	if !info.CanAutoInstall {
+		if info.AutoInstallHint != "" {
+			return errors.New(info.AutoInstallHint)
+		}
+		return errors.New("当前版本不能自动安装")
+	}
+
+	download, err := checker.Download(ctx, info)
+	if err != nil {
+		return err
+	}
+	if err := appupdate.LaunchInstaller(download); err != nil {
+		_ = os.RemoveAll(download.Directory)
+		return err
+	}
+	wailsruntime.Quit(a.context())
+	return nil
+}
+
+func (a *App) OpenReleasePage(releaseURL string) {
+	releaseURL = strings.TrimSpace(releaseURL)
+	if !strings.HasPrefix(releaseURL, appversion.RepositoryURL+"/releases") {
+		releaseURL = appversion.RepositoryURL + "/releases"
+	}
+	wailsruntime.BrowserOpenURL(a.context(), releaseURL)
 }
 
 func (a *App) FindADB(configuredPath string) (string, error) {
