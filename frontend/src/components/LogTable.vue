@@ -21,12 +21,16 @@ const tagMenuY = ref(0)
 const tagMenuTag = ref('')
 
 const rowVirtualizer = useVirtualizer(
-  computed(() => ({
-    count: store.filteredLogs.length,
-    getScrollElement: () => parentRef.value,
-    estimateSize: () => 42,
-    overscan: 20
-  }))
+  computed(() => {
+    const logs = store.filteredLogs
+    return {
+      count: logs.length,
+      getScrollElement: () => parentRef.value,
+      getItemKey: (index: number) => logs[index]?.id ?? index,
+      estimateSize: () => 42,
+      overscan: 20
+    }
+  })
 )
 
 const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems())
@@ -46,9 +50,11 @@ const scrollToBottom = useDebounceFn(() => {
 }, 40)
 
 watch(
-  () => store.filteredLogs.length,
+  [
+    () => store.filteredLogs.length,
+    () => store.filteredLogs[store.filteredLogs.length - 1]?.id
+  ],
   async () => {
-    rowVirtualizer.value.measure()
     if (store.paused) {
       return
     }
@@ -219,7 +225,7 @@ async function copySelectedLogs() {
       <div v-else class="virtual-spacer" :style="{ height: `${totalSize}px` }">
         <button
           v-for="virtualRow in virtualRows"
-          :key="store.filteredLogs[virtualRow.index].id"
+          :key="String(virtualRow.key)"
           :ref="measureRow"
           class="log-row grid-row"
           :data-index="virtualRow.index"
