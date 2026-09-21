@@ -368,4 +368,6 @@ CatScope reads device information and live Logcat through local adb. Offline log
 
 ## License
 
-This repository does not include a license file yet. Before public distribution or external contributions, the copyright holder must choose and add a `LICENSE`; until then, do not assume the code can be redistributed or sublicensed.
+CatScope is released under the [MIT License](./LICENSE). Copyright (c) 2026 HBLADEH.
+
+You may use, modify, and redistribute the code, including for commercial purposes, as long as you keep the copyright notice and license text. The software is provided "as is", without warranty of any kind.
