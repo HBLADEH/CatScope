@@ -16,6 +16,7 @@
 
 | 主题 | 文档 |
 | --- | --- |
+| 用手绘图了解当前架构、日志流向和源码入口 | [手绘架构导读](./ARCHITECTURE_SKETCH.zh-CN.md) |
 | 模块边界与关键实现 | [架构说明](./ARCHITECTURE.md) |
 | 手工验收 | [QA 清单](./QA_CHECKLIST.zh-CN.md) |
 | 近期工作方向 | [路线图](./ROADMAP.md) |

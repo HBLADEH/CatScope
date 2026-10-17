@@ -24,6 +24,7 @@
 <p align="center">
   <a href="#why-catscope">Why CatScope</a> ·
   <a href="#features">Features</a> ·
+  <a href="#architecture-at-a-glance">Architecture</a> ·
   <a href="#screenshots">Screenshots</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#roadmap">Roadmap</a> ·
@@ -44,6 +45,16 @@ Highlights:
 - **AI Context Generator** that creates local Markdown without calling external AI APIs.
 - **Offline Log Viewer** for `.txt`, `.log`, and CatScope `.jsonl` exports.
 - **Session restore** through `.catscope-session` files.
+
+## Architecture at a Glance
+
+Think of CatScope as a small debugging workshop: **Vue handles interaction, Wails connects the UI and backend, and Go runs local tools and processes logs.**
+
+![Hand-drawn CatScope architecture: the frontend workstation, Wails bridge, Go backend workshop, and local tools and files.](./docs/assets/architecture-sketch.png)
+
+Live ADB logs, offline files, and sessions share the log viewing and analysis workflow. The frontend pulls logs in batches and filters the display; rule-based analysis and AI Context Markdown generation run locally.
+
+Start with the [Hand-drawn Architecture Guide (Chinese)](./docs/ARCHITECTURE_SKETCH.zh-CN.md) to follow the log flow, understand module responsibilities, and find the source files for a change.
 
 ## Why CatScope
 
@@ -328,6 +339,7 @@ The [documentation index](./docs/README.md) groups user, development, QA, and re
 
 - [User Guide](./docs/USER_GUIDE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Hand-drawn Architecture Guide (Chinese)](./docs/ARCHITECTURE_SKETCH.zh-CN.md): an illustrated overview of the current modules, log flow, and source entry points.
 - [Manual QA Checklist](./docs/QA_CHECKLIST.md)
 - [Release Assets](./docs/RELEASE_ASSETS.md)
 - [Changelog](./CHANGELOG.md)

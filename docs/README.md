@@ -16,6 +16,7 @@ This is the CatScope documentation entry point. Chinese is the primary language 
 
 | Topic | Document |
 | --- | --- |
+| Illustrated overview of the current architecture, log flow, and source entry points | [Hand-drawn Architecture Guide (Chinese)](./ARCHITECTURE_SKETCH.zh-CN.md) |
 | Module boundaries and implementation notes | [Architecture](./ARCHITECTURE.md) |
 | Manual verification | [QA Checklist](./QA_CHECKLIST.md) |
 | Product direction | [Roadmap](./ROADMAP.md) |

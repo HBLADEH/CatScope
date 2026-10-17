@@ -24,6 +24,7 @@
 <p align="center">
   <a href="#为什么做-catscope">为什么做 CatScope</a> ·
   <a href="#功能">功能</a> ·
+  <a href="#架构一览">架构一览</a> ·
   <a href="#截图">截图</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#路线图">路线图</a> ·
@@ -44,6 +45,16 @@ CatScope 不打算替代 Android Studio。它的核心思想是 **Logcat without
 - **AI Context Generator**，在本地生成 Markdown，不调用外部 AI API。
 - **Offline Log Viewer**，支持 `.txt`、`.log` 和 CatScope `.jsonl` 导出文件。
 - **Session restore**，通过 `.catscope-session` 恢复调试现场。
+
+## 架构一览
+
+可以把 CatScope 理解成一间猫咪调试工坊：**Vue 负责交互，Wails 连接前后端，Go 调用本机工具并整理日志。**
+
+![CatScope 手绘架构图：前端操作台、Wails 桥梁、Go 后端工坊，以及本地工具与文件。](./docs/assets/architecture-sketch.png)
+
+实时 ADB 日志、离线文件和 Session 共用日志查看与分析流程。前端按批次拉取日志并筛选显示；规则分析和 AI Context Markdown 生成在本地完成。
+
+新开发者可以从 [手绘架构导读](./docs/ARCHITECTURE_SKETCH.zh-CN.md) 入手，了解日志流向、模块职责，以及改功能时该看哪个文件。
 
 ## 为什么做 CatScope
 
@@ -328,6 +339,7 @@ CatScope/
 
 - [用户指南](./docs/USER_GUIDE.zh-CN.md)
 - [架构说明](./docs/ARCHITECTURE.md)
+- [手绘架构导读](./docs/ARCHITECTURE_SKETCH.zh-CN.md)：一张图了解当前模块、日志流向和源码入口。
 - [手工 QA 清单](./docs/QA_CHECKLIST.zh-CN.md)
 - [发布与校验](./docs/RELEASE_ASSETS.md)
 - [变更记录](./CHANGELOG.md)
