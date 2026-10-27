@@ -45,6 +45,8 @@ CatScope lets you inspect live and offline Android Logcat, filter app logs, anal
 - **Sessions and presets:** Save and restore logs, filters, and analysis results in `.catscope-session` files; reuse configuration through workspaces and filter presets.
 - **Build, install, and launch:** Run the project's Gradle Wrapper (`assembleDebug` by default), install the APK, and launch the configured app.
 
+The workbench keeps logs in the main area: source, device, app, and filters sit at the top; details and analysis open on the right; Build & run opens below the logs. File contains session saving and exports, while Settings groups ADB, appearance, workspaces, and updates. Light, dark, and system themes use the logo's navy and cyan palette.
+
 See [Known Issues](./docs/KNOWN_ISSUES.md) for scope and current limitations.
 
 ## Installation

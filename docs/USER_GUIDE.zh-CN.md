@@ -2,6 +2,15 @@
 
 CatScope 是一个轻量 Android Logcat 调试工作台。它适合查看实时日志、分析崩溃线索、打开离线日志、保存调试现场，并生成本地 Markdown 形式的 AI Context。它不是 Android Studio 的替代品，也不会上传日志或调用外部 AI API。
 
+## 工作台布局
+
+- 顶部第一行选择工作区和日志来源；实时模式下还可以选择设备与应用。通过来源菜单打开日志文件、恢复会话或返回实时模式。
+- 第二行集中搜索、过滤预设、日志级别和“更多过滤”。启用的 Tag、排除词和 Regex 会在工具栏下方显示，可分别清除。
+- 点击日志行在右侧查看完整原文；点击“问题”查看问题列表，选中一项后再查看关键帧、建议和 AI Context 操作。
+- 右上角“构建与运行”展开底部任务区，可拖动上边缘或聚焦分隔线后用方向键调整高度。收起面板不会取消正在进行的任务。
+- “文件”菜单提供会话保存、另存为及日志导出。会话名称和备注在保存弹窗中编辑，失败时保留输入。
+- “设置”集中管理外观与语言、设备与 ADB、工作区和应用更新。窄窗口会将详情放到日志下方。
+
 ## 连接 Android 设备
 
 1. 安装 Android SDK Platform Tools。
@@ -15,7 +24,7 @@ CatScope 是一个轻量 Android Logcat 调试工作台。它适合查看实时�
 
 ## 检查和安装 CatScope 更新
 
-CatScope 默认在启动后检查最新正式版。左侧“应用更新”区域可以关闭自动检查、手动检查，或选择接收 Preview 版本。
+CatScope 默认在启动后检查最新正式版。打开右上角“设置 → 应用更新”，可以关闭自动检查、手动检查，或选择接收 Preview 版本。
 
 Windows 便携版发现新版本后，可以选择“安装并重启”。CatScope 会从 GitHub Release 下载与当前架构匹配的 EXE，并使用同名 `.sha256` 文件校验；校验通过后，程序退出，由临时 updater 替换原 EXE，再重新启动。发布包仍然只有一个 EXE。
 
@@ -42,14 +51,14 @@ Windows 便携版发现新版本后，可以选择“安装并重启”。CatSco
 
 ## Build / Install / Launch
 
-1. 选择一个 Android 项目目录。
+1. 点击右上角“构建与运行”，在底部任务区选择 Android 项目目录。
 2. CatScope 会检测 `gradlew` 或 `gradlew.bat`，并校验 `settings.gradle` 或 `settings.gradle.kts`。
 3. 默认构建任务是 `assembleDebug`。
 4. 构建完成后，CatScope 会在 `build/outputs/apk` 下查找最新 debug APK。
 5. 安装使用 `adb install -r`，并支持 `-d`、`-g`、`-t` 等常用选项。
 6. 启动当前 package 时，CatScope 使用 `adb shell monkey -p <package> 1`。
 
-当前 Build / Install / Launch 仍是 MVP：module / variant 选择较基础，不支持 Gradle Project Sync。
+“构建并运行”依次执行构建、安装和启动；“单步操作”保留单独构建、查找 APK、安装、构建并安装和启动。“安装与日志选项”中可调整安装标志、自动 Logcat 和启动时清空。当前 Build / Install / Launch 仍是 MVP：module / variant 选择较基础，不支持 Gradle Project Sync。
 
 ## 查看 Analyzer
 
@@ -61,28 +70,29 @@ Analyzer 会基于本地规则识别常见问题：
 - JNI Error。
 - Install Error。
 
-选择相关日志或安装失败输出后，在 Analysis Tab 查看摘要、原因、关键日志和建议。Analyzer 不调用外部 AI API。
+选择相关日志或安装失败输出后，点击顶部“问题”，在右侧查看列表。选中一个问题后查看摘要、原因、关键日志和建议；相关日志会在表格中定位，分析视图保持打开。Analyzer 不调用外部 AI API。
+
+如果当前过滤条件隐藏了问题日志，点击“临时查看关联日志”即可核对原文，搜索和过滤条件会保留。点击表格上方“返回过滤结果”继续筛看；再次点击当前问题或“定位关联日志”，可以重新回到故障位置。
 
 ## 复制 AI Context
 
-1. 在 Analysis Tab 选择一个分析结果。
-2. 打开 AI Context 区域。
-3. CatScope 会在本地生成 Markdown，包含设备、package、PID、分析摘要、相关日志、上下文日志和建议。
-4. 点击复制，或导出为 `.md` 文件。
+1. 点击“问题”，在分析页签中选择一个结果。
+2. 点击问题原因下方的“复制 AI Context”或“导出 AI Context”。
+3. CatScope 会在本地生成 Markdown，包含设备、package、PID、分析摘要、相关日志、上下文日志和建议；导出格式为 `.md`。
 
 AI Context 只是本地 Markdown。是否粘贴给外部工具由你决定，请先检查敏感信息。
 
 ## 打开离线日志
 
-1. 使用 Offline Log File Viewer 打开 `.txt`、`.log` 或 `.jsonl` 文件。
+1. 在顶部来源菜单选择“打开日志文件”，或点击空日志区的同名按钮，打开 `.txt`、`.log` 或 `.jsonl` 文件。
 2. CatScope 会复用 threadtime parser，并保留无法解析的 raw 行。
 3. 离线日志同样支持搜索、过滤、Analyzer 和 AI Context。
 4. CatScope 导出的 JSONL 文件可以再次打开。
 
 ## 保存和打开 Session
 
-1. 在实时日志或离线日志分析过程中保存 `.catscope-session` 文件。
+1. 在实时日志或离线日志分析过程中，通过“文件 → 保存会话”保存 `.catscope-session` 文件；需要新路径时选择“会话另存为”。
 2. Session 会保存日志、过滤条件、workspace 信息、Analysis 结果、AI Context options 和 notes。
-3. 之后可以打开 session 文件，恢复到 Session 模式继续查看和分析。
+3. 之后通过顶部来源菜单的“打开会话”恢复到 Session 模式继续查看和分析。
 
 大型 session 文件当前没有压缩或分片，保存和分享前请留意文件大小与敏感信息。

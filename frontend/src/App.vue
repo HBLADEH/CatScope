@@ -8,25 +8,26 @@ import {
   NIcon,
   zhCN,
   type DropdownOption,
-  type SelectOption
+  type SelectOption,
+  type GlobalThemeOverrides
 } from 'naive-ui'
 import {
   AnalyticsOutline,
-  ChevronBackOutline,
   ChevronDownOutline,
-  ChevronForwardOutline,
   CloseOutline,
-  DownloadOutline,
   FolderOpenOutline,
   HammerOutline,
   PauseOutline,
   PlayOutline,
   RefreshOutline,
-  SaveOutline,
   StopOutline,
-  TrashOutline
+  TrashOutline,
+  SettingsOutline,
+  OptionsOutline
 } from '@vicons/ionicons5'
 
+import BuildPanel from '@/components/BuildPanel.vue'
+import logoURL from '@/assets/logo.svg'
 import LogDetails from '@/components/LogDetails.vue'
 import LogTable from '@/components/LogTable.vue'
 import { currentLocale, languageOptions, localizePresetName, setLocale, t } from '@/i18n'
@@ -35,7 +36,16 @@ import type { UpdateInfo } from '@/types/backend'
 import { backend } from '@/utils/wails'
 
 const store = useLogStore()
-const sidebarCollapsed = ref(false)
+const settingsOpen = ref(false)
+const settingsTab = ref('general')
+const buildPanelOpen = ref(false)
+const buildPanelHeight = ref(220)
+const logTableRef = ref<InstanceType<typeof LogTable> | null>(null)
+const relatedFocusIDs = ref<number[]>([])
+const saveSessionOpen = ref(false)
+const saveSessionError = ref('')
+const saveAsNewPath = ref(false)
+let stopBuildResize: (() => void) | undefined
 const detailsPanelOpen = ref(false)
 const detailsPanelTab = ref<'details' | 'analysis'>('details')
 const allLogLevels = ['V', 'D', 'I', 'W', 'E', 'F']
@@ -133,16 +143,6 @@ const sourceLabel = computed(() => {
   return t('source.live')
 })
 
-const sourceTagType = computed(() => {
-  if (store.isSession) {
-    return 'info'
-  }
-  if (store.isOffline) {
-    return 'warning'
-  }
-  return 'success'
-})
-
 function handleDeviceChange(value: string | number | null) {
   void store.selectDevice(typeof value === 'string' ? value : null)
 }
@@ -187,10 +187,6 @@ function toggleLevel(level: string, checked: boolean) {
   if (!checked) {
     store.levels = store.levels.filter((item) => item !== level)
   }
-}
-
-function toggleSidebar() {
-  sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
 function setThemeMode(mode: ThemeMode) {
@@ -252,13 +248,6 @@ function openReleasePage() {
   void backend.openReleasePage(updateInfo.value?.releaseUrl || '')
 }
 
-function buildStateLabel(success?: boolean) {
-  if (success === undefined) {
-    return '-'
-  }
-  return success ? t('common.success') : t('common.failed')
-}
-
 function displayPresetName(id: string, name: string) {
   return localizePresetName(id, name)
 }
@@ -276,6 +265,7 @@ function handlePresetNameInput(presetID: string, value: string) {
 }
 
 function openDetailsPanel(tab: 'details' | 'analysis' = 'details') {
+  if (window.innerWidth < 1100) buildPanelOpen.value = false
   detailsPanelTab.value = tab
   detailsPanelOpen.value = true
 }
@@ -320,26 +310,19 @@ watch(includePrereleaseUpdates, (enabled) => {
   localStorage.setItem('catscope.includePrereleaseUpdates', String(enabled))
 })
 
-watch(
-  () => store.selectedLog?.id,
-  (id) => {
-    if (id !== undefined) {
-      openDetailsPanel('details')
-    }
-  }
-)
-
 onMounted(() => {
   const media = window.matchMedia?.('(prefers-color-scheme: dark)')
   if (media) {
     systemPrefersDark.value = media.matches
     media.addEventListener('change', handleSystemThemeChange)
   }
+  window.addEventListener('keydown', handleWorkbenchKeyDown)
+  window.addEventListener('resize', handleViewportResize)
   void store.loadConfig()
   void store.refreshDevices()
   void backend.getAppVersion().then((version) => {
     appVersion.value = version
-  })
+  }).catch(() => { appVersion.value = '' })
   if (autoCheckUpdates.value) {
     updateCheckTimer = window.setTimeout(() => {
       void checkForUpdates(false)
@@ -349,568 +332,305 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.matchMedia?.('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemThemeChange)
+  window.removeEventListener('keydown', handleWorkbenchKeyDown)
+  window.removeEventListener('resize', handleViewportResize)
+  stopBuildResize?.()
   store.stopPolling()
   if (updateCheckTimer !== undefined) {
     window.clearTimeout(updateCheckTimer)
   }
 })
+
+const themeOverrides = computed<GlobalThemeOverrides>(() => {
+  const dark = activeThemeName.value === 'dark'
+  return {
+    common: {
+      primaryColor: dark ? '#00C4DA' : '#007F95',
+      primaryColorHover: dark ? '#38D5E5' : '#0095AC',
+      primaryColorPressed: dark ? '#00A6BA' : '#00697C',
+      primaryColorSuppl: dark ? '#00C4DA' : '#007F95',
+      bodyColor: dark ? '#0B1420' : '#F3F7FB',
+      cardColor: dark ? '#122131' : '#FFFFFF',
+      modalColor: dark ? '#122131' : '#FFFFFF',
+      popoverColor: dark ? '#162A3D' : '#FFFFFF',
+      inputColor: dark ? '#0E1B29' : '#FFFFFF',
+      borderColor: dark ? '#294054' : '#D7E2EC',
+      textColorBase: dark ? '#DCE8F2' : '#203247',
+      textColor1: dark ? '#EDF5FC' : '#082B49',
+      textColor2: dark ? '#CBD9E5' : '#334B60',
+      textColor3: dark ? '#8EA6BB' : '#60758A',
+      borderRadius: '6px',
+      fontSize: '13px',
+      heightMedium: '32px',
+      heightSmall: '28px'
+    },
+    Button: {
+      textColorPrimary: dark ? '#06283D' : '#FFFFFF',
+      textColorHoverPrimary: dark ? '#06283D' : '#FFFFFF',
+      textColorPressedPrimary: dark ? '#06283D' : '#FFFFFF'
+    },
+    Tag: {
+      textColorError: dark ? '#FFC2CC' : '#A61F38',
+      colorError: dark ? '#4A2536' : '#FBE7EC'
+    }
+  }
+})
+const sourceOptions = computed<DropdownOption[]>(() => [
+  { label: t('source.live'), key: 'live' },
+  { label: t('workbench.openFile'), key: 'file' },
+  { label: t('source.openSession'), key: 'session' }
+])
+const fileOptions = computed<DropdownOption[]>(() => [
+  { label: t('source.saveSession'), key: 'save', disabled: store.logs.length === 0 },
+  { label: t('workbench.saveAs'), key: 'save-as', disabled: store.logs.length === 0 },
+  { type: 'divider', key: 'file-divider' },
+  ...exportOptions.value.map(option => ({ ...option, disabled: store.filteredLogs.length === 0 }))
+])
+const activeFilterCount = computed(() => Number(Boolean(store.tagFilter.trim())) + Number(Boolean(store.excludeKeyword.trim())) + Number(store.regexEnabled))
+const sourceFileName = computed(() => store.isSession
+  ? store.currentSession?.name || store.status.sessionName || t('source.session')
+  : store.status.offlineFileName || t('source.offline'))
+const sourceFilePath = computed(() => store.isSession
+  ? store.sessionPathInput || store.status.sessionFilePath
+  : store.status.offlineFilePath)
+const sourceCaption = computed(() => store.isStaticSource ? sourceLabel.value : t('workbench.liveShort'))
+const captureState = computed(() => store.running
+  ? (store.paused ? t('status.paused') : t('status.streaming'))
+  : t('status.stopped'))
+
+function handleSourceSelect(key: string | number) {
+  relatedFocusIDs.value = []
+  if (key === 'file') void store.openLogFile('')
+  else if (key === 'session') void store.openSession('')
+  else if (store.isStaticSource) void store.returnToLiveMode()
+}
+function handleFileSelect(key: string | number) {
+  if (key === 'save' || key === 'save-as') {
+    saveAsNewPath.value = key === 'save-as'
+    saveSessionError.value = ''
+    saveSessionOpen.value = true
+  } else handleExportSelect(key)
+}
+async function saveSessionAndClose() {
+  saveSessionError.value = ''
+  await store.saveSession(saveAsNewPath.value ? '' : store.sessionPathInput)
+  saveSessionError.value = store.error
+  if (!saveSessionError.value) saveSessionOpen.value = false
+}
+function toggleBuildPanel() {
+  buildPanelOpen.value = !buildPanelOpen.value
+  if (buildPanelOpen.value && window.innerWidth < 1100) detailsPanelOpen.value = false
+}
+function openSettings(tab = 'general') {
+  settingsTab.value = tab
+  settingsOpen.value = true
+}
+function clearAdvancedFilters() {
+  store.tagFilter = ''
+  store.excludeKeyword = ''
+  store.regexEnabled = false
+  void store.saveCurrentWorkspace()
+}
+function resizeBuildPanel(delta: number) {
+  const maximum = Math.max(140, Math.min(440, window.innerHeight - 330))
+  buildPanelHeight.value = Math.max(140, Math.min(maximum, buildPanelHeight.value + delta))
+}
+function startBuildResize(event: PointerEvent) {
+  if (event.button !== 0) return
+  event.preventDefault()
+  stopBuildResize?.()
+  let lastY = event.clientY
+  const move = (current: PointerEvent) => {
+    resizeBuildPanel(lastY - current.clientY)
+    lastY = current.clientY
+  }
+  const stop = () => {
+    window.removeEventListener('pointermove', move)
+    window.removeEventListener('pointerup', stop)
+    window.removeEventListener('pointercancel', stop)
+    stopBuildResize = undefined
+  }
+  stopBuildResize = stop
+  window.addEventListener('pointermove', move)
+  window.addEventListener('pointerup', stop, { once: true })
+  window.addEventListener('pointercancel', stop, { once: true })
+}
+const visibleLogCount = computed(() => relatedFocusIDs.value.length
+  ? store.logs.filter(entry => relatedFocusIDs.value.includes(entry.id)).length
+  : store.filteredLogs.length)
+watch(
+  [() => store.search, () => store.levels.join(','), () => store.tagFilter, () => store.excludeKeyword, () => store.regexEnabled, () => store.selectedPackage, () => store.selectedPresetID, () => store.status.source, () => store.logs.length === 0],
+  () => { relatedFocusIDs.value = [] }
+)
+async function locateRelatedLog(id: number) {
+  if (relatedFocusIDs.value.length) relatedFocusIDs.value = store.selectedAnalysis?.relatedEntryIds || [id]
+  await logTableRef.value?.scrollToLog(id)
+}
+async function showRelatedLogs(ids: number[]) {
+  relatedFocusIDs.value = [...ids]
+  if (ids[0] !== undefined) await logTableRef.value?.scrollToLog(ids[0])
+}
+function handleViewportResize() {
+  resizeBuildPanel(0)
+  if (window.innerWidth < 1100 && detailsPanelOpen.value && buildPanelOpen.value) buildPanelOpen.value = false
+}
+function handleWorkbenchKeyDown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || event.defaultPrevented || settingsOpen.value || saveSessionOpen.value || updateModalOpen.value || store.presetManagerOpen) return
+  if (detailsPanelOpen.value) closeDetailsPanel()
+  else buildPanelOpen.value = false
+}
 </script>
 
 <template>
-  <n-config-provider :theme="naiveTheme" :locale="naiveLocale" :date-locale="naiveDateLocale">
+  <n-config-provider :theme="naiveTheme" :theme-overrides="themeOverrides" :locale="naiveLocale" :date-locale="naiveDateLocale">
     <n-dialog-provider>
       <n-message-provider>
         <main class="app-shell">
-          <header class="toolbar">
-            <div class="brand">
-              <div class="brand-mark">C</div>
-              <h1>CatScope</h1>
+          <header class="workbench-header">
+            <div class="context-bar">
+              <div class="brand"><img class="brand-logo" :src="logoURL" alt="" /><h1>CatScope</h1></div>
+              <n-select class="workspace-select" :value="store.activeWorkspaceID" :options="store.workspaceOptions" :placeholder="t('workspace.placeholder')" :aria-label="t('workspace.title')" @update:value="handleWorkspaceChange" />
+              <span class="context-divider"></span>
+              <n-dropdown trigger="click" :options="sourceOptions" @select="handleSourceSelect">
+                <n-button class="source-switch" secondary><n-icon :component="FolderOpenOutline" /><span class="source-label">{{ sourceCaption }}</span><n-icon :component="ChevronDownOutline" /></n-button>
+              </n-dropdown>
+              <template v-if="!store.isStaticSource">
+                <n-select class="device-select" :value="store.selectedSerial || null" :options="deviceOptions" :loading="store.loading" :placeholder="t('toolbar.noDevice')" :aria-label="t('device.title')" @update:value="handleDeviceChange" />
+                <n-select class="package-select" :value="store.selectedPackage || null" :options="packageOptions" :loading="store.packageLoading" :disabled="!store.canSelectPackage" clearable filterable :placeholder="t('toolbar.allPackages')" :aria-label="t('details.package')" @update:value="handlePackageChange" />
+                <n-button quaternary circle :loading="store.loading" :aria-label="t('workbench.refreshDevices')" :title="t('workbench.refreshDevices')" @click="store.refreshDevices"><n-icon :component="RefreshOutline" /></n-button>
+              </template>
+              <span v-else class="source-file-name" :title="sourceFilePath || sourceFileName">{{ sourceFileName }}</span>
+              <div class="context-spacer"></div>
+              <n-button class="build-toggle" :secondary="buildPanelOpen" :type="buildPanelOpen ? 'primary' : 'default'" :aria-pressed="buildPanelOpen" aria-controls="build-dock" @click="toggleBuildPanel"><template #icon><n-icon :component="HammerOutline" /></template>{{ t('workbench.buildRun') }}<span v-if="store.buildLoading || store.installLoading || store.launchLoading" class="running-dot"></span></n-button>
+              <n-dropdown trigger="click" :options="fileOptions" @select="handleFileSelect"><n-button quaternary>{{ t('workbench.fileMenu') }}<n-icon :component="ChevronDownOutline" /></n-button></n-dropdown>
+              <n-button quaternary circle :aria-label="t('workbench.settings')" :title="t('workbench.settings')" @click="openSettings()"><n-icon :component="SettingsOutline" /></n-button>
             </div>
-
-            <div class="toolbar-controls">
-              <div class="toolbar-device-group">
-                <n-select
-                  :value="store.selectedSerial"
-                  class="device-select"
-                  :options="deviceOptions"
-                  :loading="store.loading"
-                  :placeholder="t('toolbar.noDevice')"
-                  @update:value="handleDeviceChange"
-                />
-
-                <n-select
-                  :value="store.packageMode"
-                  class="package-mode-select"
-                  :options="packageModeOptions"
-                  :disabled="!store.canSelectPackage"
-                  @update:value="handlePackageModeChange"
-                />
-
-                <n-select
-                  :value="store.selectedPackage || null"
-                  class="package-select"
-                  :options="packageOptions"
-                  :loading="store.packageLoading"
-                  :disabled="!store.canSelectPackage"
-                  clearable
-                  filterable
-                  :placeholder="t('toolbar.allPackages')"
-                  @update:value="handlePackageChange"
-                />
-
-                <n-button :loading="store.loading" tertiary @click="store.refreshDevices">
-                  <template #icon>
-                    <n-icon :component="RefreshOutline" />
-                  </template>
-                </n-button>
+            <div class="query-bar">
+              <div v-if="!store.isStaticSource" class="capture-controls">
+                <n-button v-if="!store.running" type="primary" :disabled="!store.canStart" :title="!store.canStart ? store.deviceHint || t('error.selectDevice') : ''" @click="store.start"><template #icon><n-icon :component="PlayOutline" /></template>{{ t('toolbar.start') }}</n-button>
+                <template v-else>
+                  <n-button type="primary" @click="store.togglePause"><template #icon><n-icon :component="store.paused ? PlayOutline : PauseOutline" /></template>{{ store.paused ? t('toolbar.resume') : t('toolbar.pause') }}</n-button>
+                  <n-button quaternary circle :aria-label="t('toolbar.stop')" :title="t('toolbar.stop')" @click="store.stop"><n-icon :component="StopOutline" /></n-button>
+                </template>
               </div>
-
-              <div class="toolbar-action-group">
-                <n-button type="primary" :disabled="!store.canStart" @click="store.start">
-                  <template #icon>
-                    <n-icon :component="PlayOutline" />
-                  </template>
-                  {{ t('toolbar.start') }}
-                </n-button>
-
-                <n-button :disabled="!store.running || store.isStaticSource" @click="store.stop">
-                  <template #icon>
-                    <n-icon :component="StopOutline" />
-                  </template>
-                  {{ t('toolbar.stop') }}
-                </n-button>
-
-                <n-button class="pause-button" :disabled="!store.running || store.isStaticSource" @click="store.togglePause">
-                  <template #icon>
-                    <n-icon :component="PauseOutline" />
-                  </template>
-                  {{ store.paused ? t('toolbar.resume') : t('toolbar.pause') }}
-                </n-button>
-
-                <div class="toolbar-filter-group">
-                  <n-input v-model:value="store.search" class="toolbar-search" clearable :placeholder="t('toolbar.searchPlaceholder')" />
-
-                  <n-popover trigger="click" placement="bottom-end" raw>
-                    <template #trigger>
-                      <n-button class="level-filter-button">
-                        <span>{{ levelSummary }}</span>
-                        <n-icon class="level-filter-caret" :component="ChevronDownOutline" />
-                      </n-button>
-                    </template>
-
-                    <div class="level-filter-popover">
-                      <div class="level-filter-actions">
-                        <n-button size="tiny" tertiary :disabled="allLevelsSelected" @click="setAllLevels">
-                          {{ t('common.all') }}
-                        </n-button>
-                        <n-button size="tiny" tertiary :disabled="store.levels.length === 0" @click="clearLevels">
-                          {{ t('common.none') }}
-                        </n-button>
-                      </div>
-                      <div class="level-filter-grid">
-                        <n-checkbox
-                          v-for="level in allLogLevels"
-                          :key="level"
-                          :checked="store.levels.includes(level)"
-                          @update:checked="(checked: boolean) => toggleLevel(level, checked)"
-                        >
-                          <span :class="`level level-${level}`">{{ level }}</span>
-                        </n-checkbox>
-                      </div>
-                    </div>
-                  </n-popover>
+              <n-input v-model:value="store.search" class="toolbar-search" clearable :aria-label="t('workbench.search')" :placeholder="t('workbench.searchPlaceholder')" />
+              <n-select class="preset-select" :value="store.selectedPresetID || null" :options="store.presetOptions" clearable :placeholder="t('filter.applyPlaceholder')" :aria-label="t('filter.presets')" @update:value="handlePresetChange" />
+              <n-popover trigger="click" placement="bottom-end" raw>
+                <template #trigger><n-button class="level-filter-button"><span>{{ levelSummary }}</span><n-icon :component="ChevronDownOutline" /></n-button></template>
+                <div class="level-filter-popover">
+                  <div class="level-filter-actions"><n-button size="tiny" tertiary :disabled="allLevelsSelected" @click="setAllLevels">{{ t('common.all') }}</n-button><n-button size="tiny" tertiary :disabled="store.levels.length === 0" @click="clearLevels">{{ t('common.none') }}</n-button></div>
+                  <div class="level-filter-grid"><n-checkbox v-for="level in allLogLevels" :key="level" :checked="store.levels.includes(level)" @update:checked="(checked: boolean) => toggleLevel(level, checked)"><span :class="`level level-${level}`">{{ level }}</span></n-checkbox></div>
                 </div>
-
-                <n-button tertiary @click="store.clear">
-                  <template #icon>
-                    <n-icon :component="TrashOutline" />
-                  </template>
-                  {{ t('toolbar.clear') }}
-                </n-button>
-
-                <n-button tertiary :disabled="store.filteredLogs.length === 0" @click="store.analyzeCurrentLogs">
-                  <template #icon>
-                    <n-icon :component="AnalyticsOutline" />
-                  </template>
-                  {{ t('toolbar.analyze') }}
-                </n-button>
-
-                <n-dropdown
-                  trigger="click"
-                  :options="exportOptions"
-                  :disabled="store.filteredLogs.length === 0"
-                  @select="handleExportSelect"
-                >
-                  <n-button class="export-button" tertiary :disabled="store.filteredLogs.length === 0">
-                    <template #icon>
-                      <n-icon :component="DownloadOutline" />
-                    </template>
-                    {{ t('toolbar.export') }}
-                  </n-button>
-                </n-dropdown>
-              </div>
+              </n-popover>
+              <n-popover trigger="click" placement="bottom-end" raw>
+                <template #trigger><n-button :type="activeFilterCount ? 'primary' : 'default'" :secondary="activeFilterCount > 0"><template #icon><n-icon :component="OptionsOutline" /></template>{{ t('workbench.filters') }}<span v-if="activeFilterCount" class="filter-count">{{ activeFilterCount }}</span></n-button></template>
+                <div class="advanced-filters">
+                  <label>{{ t('filter.tagsPlaceholder') }}<n-input v-model:value="store.tagFilter" clearable @blur="store.saveCurrentWorkspace" /></label>
+                  <label>{{ t('filter.excludePlaceholder') }}<n-input v-model:value="store.excludeKeyword" clearable @blur="store.saveCurrentWorkspace" /></label>
+                  <n-checkbox v-model:checked="store.regexEnabled" @update:checked="store.saveCurrentWorkspace">{{ t('filter.regex') }}</n-checkbox>
+                  <label v-if="!store.isStaticSource">{{ t('workbench.packageScope') }}<n-select :value="store.packageMode" :options="packageModeOptions" :disabled="!store.canSelectPackage" @update:value="handlePackageModeChange" /></label>
+                  <div class="panel-inline-actions"><n-button size="small" @click="store.presetManagerOpen = true">{{ t('filter.manage') }}</n-button><n-button size="small" :disabled="activeFilterCount === 0" @click="clearAdvancedFilters">{{ t('workbench.clearAdvanced') }}</n-button></div>
+                </div>
+              </n-popover>
+              <n-button class="issues-toggle" :type="detailsPanelOpen && detailsPanelTab === 'analysis' ? 'primary' : 'default'" :secondary="detailsPanelOpen && detailsPanelTab === 'analysis'" @click="openDetailsPanel('analysis')"><template #icon><n-icon :component="AnalyticsOutline" /></template>{{ t('workbench.issues', { count: store.analysisResults.length }) }}</n-button>
+              <n-button quaternary circle :disabled="store.logs.length === 0" :aria-label="t('toolbar.clear')" :title="t('toolbar.clear')" @click="store.clear"><n-icon :component="TrashOutline" /></n-button>
+            </div>
+            <div v-if="activeFilterCount" class="active-filters">
+              <span>{{ t('workbench.activeFilters') }}</span>
+              <n-tag v-if="store.tagFilter" size="small" closable @close="store.tagFilter = ''; store.saveCurrentWorkspace()">Tag: {{ store.tagFilter }}</n-tag>
+              <n-tag v-if="store.excludeKeyword" size="small" closable @close="store.excludeKeyword = ''; store.saveCurrentWorkspace()">{{ t('workbench.exclude') }}: {{ store.excludeKeyword }}</n-tag>
+              <n-tag v-if="store.regexEnabled" size="small" closable @close="store.regexEnabled = false; store.saveCurrentWorkspace()">Regex</n-tag>
             </div>
           </header>
 
-          <section class="workspace" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-            <aside class="device-panel">
-              <div class="sidebar-panel-bar">
-                <span v-if="!sidebarCollapsed">{{ t('source.controls') }}</span>
-                <n-button tertiary circle :title="sidebarCollapsed ? t('toolbar.expandSidebar') : t('toolbar.collapseSidebar')" @click="toggleSidebar">
-                  <template #icon>
-                    <n-icon :component="sidebarCollapsed ? ChevronForwardOutline : ChevronBackOutline" />
-                  </template>
-                </n-button>
-              </div>
-
-              <template v-if="!sidebarCollapsed">
-              <section class="sidebar-settings-panel">
-                <h2>{{ t('theme.appearance') }}</h2>
-                <n-select
-                  :value="themeMode"
-                  :options="themeOptions"
-                  size="small"
-                  @update:value="handleThemeModeChange"
-                />
-                <h2>{{ t('language.label') }}</h2>
-                <n-select
-                  :value="currentLocale"
-                  :options="languageOptions"
-                  size="small"
-                  @update:value="handleLocaleChange"
-                />
-                <h2>{{ t('update.title') }}</h2>
-                <div class="update-setting-row">
-                  <n-checkbox v-model:checked="autoCheckUpdates">
-                    {{ t('update.autoCheck') }}
-                  </n-checkbox>
-                  <n-checkbox v-model:checked="includePrereleaseUpdates">
-                    {{ t('update.includePrerelease') }}
-                  </n-checkbox>
-                </div>
-                <div class="update-action-row">
-                  <span>{{ t('update.currentVersion', { version: appVersion || '-' }) }}</span>
-                  <n-button size="small" tertiary :loading="checkingUpdates" @click="checkForUpdates(true)">
-                    {{ t('update.checkNow') }}
-                  </n-button>
-                </div>
+          <section class="workbench-body">
+            <section class="workspace" :class="{ 'details-open': detailsPanelOpen }">
+              <LogTable ref="logTableRef" :focus-entry-ids="relatedFocusIDs" @select="openDetailsPanel('details')" @return-filter="relatedFocusIDs = []" />
+              <transition name="details-slide">
+                <aside v-if="detailsPanelOpen" class="details-drawer">
+                  <LogDetails :default-tab="detailsPanelTab" :related-logs-shown="relatedFocusIDs.length > 0" @tab-change="detailsPanelTab = $event" @close="closeDetailsPanel" @locate="locateRelatedLog" @show-related="showRelatedLogs" />
+                </aside>
+              </transition>
+            </section>
+            <transition name="build-slide">
+              <section v-if="buildPanelOpen" id="build-dock" class="build-dock" :style="{ height: `${buildPanelHeight}px` }">
+                <div class="dock-resize" role="separator" aria-orientation="horizontal" :aria-label="t('workbench.resizeBuild')" tabindex="0" @pointerdown="startBuildResize" @keydown.up.prevent="resizeBuildPanel(20)" @keydown.down.prevent="resizeBuildPanel(-20)"></div>
+                <div class="dock-header"><strong><n-icon :component="HammerOutline" />{{ t('workbench.buildRun') }}</strong><span>{{ store.projectConfig.defaultBuildTask }}</span><n-button quaternary circle size="small" :aria-label="t('workbench.closeBuild')" @click="buildPanelOpen = false"><n-icon :component="CloseOutline" /></n-button></div>
+                <BuildPanel />
               </section>
-
-              <section class="source-panel">
-                <h2>{{ t('source.logSource') }}</h2>
-                <div class="source-mode-row">
-                  <n-tag :type="sourceTagType" size="small">
-                    {{ sourceLabel }}
-                  </n-tag>
-                  <n-button v-if="store.isStaticSource" size="small" tertiary @click="store.returnToLiveMode">
-                    {{ t('source.returnLive') }}
-                  </n-button>
-                </div>
-                <h2 class="subsection-title">{{ t('source.adbEngine') }}</h2>
-                <div class="project-path-row">
-                  <n-input
-                    v-model:value="store.adbPathInput"
-                    :placeholder="t('source.adbPathPlaceholder')"
-                    @keyup.enter="store.useADBPath()"
-                  />
-                  <n-button :loading="store.loading" tertiary @click="store.chooseADBExecutable">
-                    <template #icon>
-                      <n-icon :component="FolderOpenOutline" />
-                    </template>
-                  </n-button>
-                </div>
-                <div class="project-actions">
-                  <n-button size="small" type="primary" tertiary :loading="store.loading" @click="store.useADBPath()">
-                    {{ t('source.useAdb') }}
-                  </n-button>
-                  <n-button size="small" tertiary :disabled="!store.adbPathInput && !store.resolvedADBPath" @click="store.useADBPath('')">
-                    {{ t('source.autoDetect') }}
-                  </n-button>
-                </div>
-                <p class="adb-path-hint">
-                  {{ store.resolvedADBPath ? t('common.current', { value: store.resolvedADBPath }) : t('common.currentAutoDetect') }}
-                </p>
-                <div class="project-path-row">
-                  <n-input
-                    v-model:value="store.offlinePathInput"
-                    :placeholder="t('source.offlinePathPlaceholder')"
-                    @keyup.enter="store.openLogFile()"
-                  />
-                  <n-button :loading="store.offlineLoading" tertiary @click="store.openLogFile()">
-                    <template #icon>
-                      <n-icon :component="FolderOpenOutline" />
-                    </template>
-                  </n-button>
-                </div>
-                <div class="project-path-row">
-                  <n-input
-                    v-model:value="store.sessionPathInput"
-                    :placeholder="t('source.sessionPathPlaceholder')"
-                    @keyup.enter="store.openSession()"
-                  />
-                  <n-button :loading="store.sessionLoading" tertiary @click="store.openSession()">
-                    <template #icon>
-                      <n-icon :component="FolderOpenOutline" />
-                    </template>
-                  </n-button>
-                </div>
-                <n-input
-                  v-model:value="store.sessionNameInput"
-                  :placeholder="t('source.sessionNamePlaceholder')"
-                />
-                <n-input
-                  v-model:value="store.sessionNotes"
-                  type="textarea"
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                  :placeholder="t('source.sessionNotesPlaceholder')"
-                />
-                <div class="project-actions">
-                  <n-button
-                    size="small"
-                    type="primary"
-                    tertiary
-                    :loading="store.sessionLoading"
-                    :disabled="store.logs.length === 0"
-                    @click="store.saveSession()"
-                  >
-                    <template #icon>
-                      <n-icon :component="SaveOutline" />
-                    </template>
-                    {{ t('source.saveSession') }}
-                  </n-button>
-                  <n-button size="small" tertiary :loading="store.sessionLoading" @click="store.openSession()">
-                    <template #icon>
-                      <n-icon :component="FolderOpenOutline" />
-                    </template>
-                    {{ t('source.openSession') }}
-                  </n-button>
-                </div>
-                <dl v-if="store.isOffline" class="source-summary">
-                  <dt>{{ t('source.file') }}</dt>
-                  <dd>{{ store.status.offlineFileName || '-' }}</dd>
-                  <dt>{{ t('source.path') }}</dt>
-                  <dd>{{ store.status.offlineFilePath || '-' }}</dd>
-                  <dt>{{ t('source.entries') }}</dt>
-                  <dd>{{ store.status.count }}</dd>
-                  <dt>{{ t('source.rawLines') }}</dt>
-                  <dd>{{ store.status.offlineParseFailedCount || 0 }}</dd>
-                </dl>
-                <dl v-if="store.isSession || store.currentSession" class="source-summary">
-                  <dt>{{ t('source.name') }}</dt>
-                  <dd>{{ store.currentSession?.name || store.status.sessionName || '-' }}</dd>
-                  <dt>{{ t('source.path') }}</dt>
-                  <dd>{{ store.currentSession?.filePath || store.status.sessionFilePath || '-' }}</dd>
-                  <dt>{{ t('source.logs') }}</dt>
-                  <dd>{{ store.currentSession?.logCount ?? store.status.count }}</dd>
-                  <dt>{{ t('source.analysis') }}</dt>
-                  <dd>{{ store.currentSession?.analysisCount ?? store.analysisResults.length }}</dd>
-                  <dt>{{ t('source.created') }}</dt>
-                  <dd>{{ store.currentSession?.createdAt || '-' }}</dd>
-                </dl>
-              </section>
-
-              <section class="project-panel">
-                <h2>{{ t('workspace.title') }}</h2>
-                <n-select
-                  :value="store.activeWorkspaceID"
-                  :options="store.workspaceOptions"
-                  :placeholder="t('workspace.placeholder')"
-                  @update:value="handleWorkspaceChange"
-                />
-                <n-input
-                  v-model:value="store.workspaceName"
-                  :placeholder="t('workspace.namePlaceholder')"
-                  @blur="store.saveCurrentWorkspace"
-                />
-                <div class="project-actions">
-                  <n-button size="small" type="primary" tertiary @click="store.saveCurrentWorkspace">
-                    {{ t('workspace.save') }}
-                  </n-button>
-                  <n-button size="small" tertiary @click="store.createWorkspace">
-                    {{ t('workspace.new') }}
-                  </n-button>
-                  <n-button size="small" tertiary :disabled="store.workspaces.length <= 1" @click="store.deleteCurrentWorkspace">
-                    {{ t('workspace.delete') }}
-                  </n-button>
-                  <n-button size="small" tertiary @click="store.resetConfig">
-                    {{ t('workspace.reset') }}
-                  </n-button>
-                </div>
-
-                <h2>{{ t('project.title') }}</h2>
-                <div class="project-path-row">
-                  <n-input
-                    v-model:value="store.projectConfig.projectPath"
-                    :placeholder="t('project.pathPlaceholder')"
-                    @blur="store.saveProjectConfig"
-                  />
-                  <n-button tertiary @click="store.chooseProjectDirectory">
-                    <template #icon>
-                      <n-icon :component="FolderOpenOutline" />
-                    </template>
-                  </n-button>
-                </div>
-                <n-input
-                  v-model:value="store.projectConfig.packageName"
-                  class="project-input"
-                  :placeholder="t('project.packagePlaceholder')"
-                  @blur="store.saveProjectConfig"
-                />
-                <n-input
-                  v-model:value="store.projectConfig.lastApkPath"
-                  class="project-input"
-                  :placeholder="t('project.apkPlaceholder')"
-                  @blur="store.saveProjectConfig"
-                />
-
-                <div class="install-options">
-                  <n-checkbox v-model:checked="store.projectConfig.installOptions.allowDowngrade" @update:checked="store.saveProjectConfig">
-                    -d
-                  </n-checkbox>
-                  <n-checkbox v-model:checked="store.projectConfig.installOptions.grantPermissions" @update:checked="store.saveProjectConfig">
-                    -g
-                  </n-checkbox>
-                  <n-checkbox v-model:checked="store.projectConfig.installOptions.allowTestOnly" @update:checked="store.saveProjectConfig">
-                    -t
-                  </n-checkbox>
-                </div>
-                <div class="install-options">
-                  <n-checkbox v-model:checked="store.autoStartLogcat" @update:checked="store.saveCurrentWorkspace">
-                    {{ t('project.autoLogcat') }}
-                  </n-checkbox>
-                  <n-checkbox v-model:checked="store.autoClearOnLaunch" @update:checked="store.saveCurrentWorkspace">
-                    {{ t('project.clearOnLaunch') }}
-                  </n-checkbox>
-                </div>
-
-                <div class="project-actions">
-                  <n-button size="small" :loading="store.buildLoading" :disabled="!store.canBuildProject" @click="store.buildDebug">
-                    <template #icon>
-                      <n-icon :component="HammerOutline" />
-                    </template>
-                    {{ t('project.buildDebug') }}
-                  </n-button>
-                  <n-button size="small" tertiary :disabled="!store.canBuildProject" @click="store.findLatestAPK">
-                    {{ t('project.findApk') }}
-                  </n-button>
-                  <n-button size="small" :loading="store.installLoading" :disabled="!store.canInstallAPK" @click="store.installAPK()">
-                    {{ t('project.installApk') }}
-                  </n-button>
-                  <n-button size="small" :loading="store.buildLoading || store.installLoading" :disabled="!store.canBuildProject || !store.canUseDeviceActions" @click="store.buildAndInstall">
-                    {{ t('project.buildInstall') }}
-                  </n-button>
-                  <n-button size="small" :loading="store.launchLoading" :disabled="!store.canLaunchProject" @click="store.launchApp">
-                    <template #icon>
-                      <n-icon :component="PlayOutline" />
-                    </template>
-                    {{ t('project.launchApp') }}
-                  </n-button>
-                  <n-button size="small" type="primary" :loading="store.buildLoading || store.installLoading || store.launchLoading" :disabled="!store.canBuildProject || !store.canUseDeviceActions || !store.launchPackageName" @click="store.buildInstallLaunch">
-                    {{ t('project.buildInstallLaunch') }}
-                  </n-button>
-                </div>
-
-                <dl class="project-summary">
-                  <dt>{{ t('project.task') }}</dt>
-                  <dd>{{ store.projectConfig.defaultBuildTask }}</dd>
-                  <dt>{{ t('project.apk') }}</dt>
-                  <dd>{{ store.latestAPK?.fileName || store.projectConfig.lastApkPath || '-' }}</dd>
-                  <dt>{{ t('project.build') }}</dt>
-                  <dd>{{ store.buildResult ? buildStateLabel(store.buildResult.success) : '-' }}</dd>
-                  <dt>{{ t('project.install') }}</dt>
-                  <dd>{{ store.installResult ? buildStateLabel(store.installResult.success) : '-' }}</dd>
-                </dl>
-
-                <details v-if="store.buildOutput || store.installOutput" class="project-output">
-                  <summary>{{ t('project.output') }}</summary>
-                  <pre v-if="store.buildOutput">{{ store.buildOutput }}</pre>
-                  <pre v-if="store.installOutput">{{ store.installOutput }}</pre>
-                </details>
-              </section>
-
-              <section class="filter-panel">
-                <h2>{{ t('filter.title') }}</h2>
-                <n-select
-                  :value="store.selectedPresetID || null"
-                  :options="store.presetOptions"
-                  clearable
-                  :placeholder="t('filter.applyPlaceholder')"
-                  @update:value="handlePresetChange"
-                />
-                <n-input
-                  v-model:value="store.presetDraftName"
-                  class="project-input"
-                  :placeholder="t('filter.namePlaceholder')"
-                />
-                <div class="project-actions">
-                  <n-button size="small" type="primary" tertiary @click="store.saveCurrentFilter">
-                    {{ t('filter.saveCurrent') }}
-                  </n-button>
-                  <n-button size="small" tertiary @click="store.presetManagerOpen = true">
-                    {{ t('filter.manage') }}
-                  </n-button>
-                </div>
-                <n-input
-                  v-model:value="store.tagFilter"
-                  class="project-input"
-                  :placeholder="t('filter.tagsPlaceholder')"
-                  @blur="store.saveCurrentWorkspace"
-                />
-                <n-input
-                  v-model:value="store.excludeKeyword"
-                  class="project-input"
-                  :placeholder="t('filter.excludePlaceholder')"
-                  @blur="store.saveCurrentWorkspace"
-                />
-                <n-checkbox v-model:checked="store.regexEnabled" @update:checked="store.saveCurrentWorkspace">
-                  {{ t('filter.regex') }}
-                </n-checkbox>
-              </section>
-
-              <h2>{{ t('device.title') }}</h2>
-              <dl v-if="store.selectedDevice">
-                <dt>{{ t('device.serial') }}</dt>
-                <dd>{{ store.selectedDevice.serial }}</dd>
-                <dt>{{ t('device.state') }}</dt>
-                <dd>{{ store.selectedDevice.state }}</dd>
-                <dt>{{ t('device.model') }}</dt>
-                <dd>{{ store.selectedDevice.model || t('common.unknown') }}</dd>
-                <dt>{{ t('device.android') }}</dt>
-                <dd>{{ store.selectedDevice.androidVersion || t('common.unknown') }}</dd>
-                <dt>{{ t('device.sdk') }}</dt>
-                <dd>{{ store.selectedDevice.sdkVersion || t('common.unknown') }}</dd>
-                <dt>{{ t('device.abi') }}</dt>
-                <dd>{{ store.selectedDevice.abi || t('common.unknown') }}</dd>
-                <dt>{{ t('device.package') }}</dt>
-                <dd>{{ store.selectedPackage || t('device.allLogs') }}</dd>
-                <dt>{{ t('device.currentPid') }}</dt>
-                <dd>{{ store.currentPIDs.length ? store.currentPIDs.join(', ') : t('common.noRunningProcess') }}</dd>
-                <dt>{{ t('device.knownPid') }}</dt>
-                <dd>{{ store.knownPIDs.length ? store.knownPIDs.join(', ') : '-' }}</dd>
-              </dl>
-              <p v-else class="empty-copy">{{ t('device.connectAndRefresh') }}</p>
-              <n-alert v-if="store.deviceHint" class="device-alert" type="warning" :show-icon="false">
-                {{ store.deviceHint }}
-              </n-alert>
-              <n-alert v-if="store.packageHint" class="device-alert" type="info" :show-icon="false">
-                {{ store.packageHint }}
-              </n-alert>
-              </template>
-              <div v-else class="sidebar-collapsed-rail">
-                <span :title="t('source.logSource')">SRC</span>
-                <span :title="t('workspace.title')">WK</span>
-                <span :title="t('filter.title')">FLT</span>
-              </div>
-            </aside>
-
-            <LogTable />
-
-            <transition name="details-slide">
-              <aside v-if="detailsPanelOpen" class="details-drawer">
-                <div class="details-drawer-header">
-                  <strong>{{ detailsPanelTab === 'analysis' ? t('details.analysisTitle') : t('details.title') }}</strong>
-                  <n-button tertiary circle size="small" :title="t('details.close')" @click="closeDetailsPanel">
-                    <template #icon>
-                      <n-icon :component="CloseOutline" />
-                    </template>
-                  </n-button>
-                </div>
-                <LogDetails :default-tab="detailsPanelTab" />
-              </aside>
             </transition>
           </section>
 
           <footer class="statusbar">
             <div class="statusbar-info">
-              <span>{{ t('status.device', { value: store.selectedSerial || t('status.none') }) }}</span>
-              <span>{{ t('status.source', { value: sourceLabel }) }}</span>
-              <span>{{ t('status.visible', { value: store.filteredLogs.length }) }}</span>
-              <span>{{ t('status.package', { value: store.selectedPackage || t('status.all') }) }}</span>
-              <span>{{ t('status.pid', { value: store.currentPIDs.length ? store.currentPIDs.join(',') : t('status.none') }) }}</span>
-              <span>{{ t('status.issues', { value: store.analysisResults.length }) }}</span>
-              <span>{{ t('status.buffered', { value: store.status.count }) }}</span>
-              <span>{{ t('status.dropped', { value: store.status.discardedCount }) }}</span>
-              <span>{{ t('status.state', { value: store.running ? (store.paused ? t('status.paused') : t('status.streaming')) : t('status.stopped') }) }}</span>
-              <span v-if="store.error" class="status-error">{{ store.error }}</span>
-              <span v-else-if="store.notice" class="status-notice">{{ store.notice }}</span>
+              <span class="capture-status" :class="{ active: store.running && !store.paused }"><i></i>{{ store.isStaticSource ? sourceLabel : captureState }}</span>
+              <span>{{ t('status.visible', { value: visibleLogCount }) }} / {{ store.status.count }}</span>
+              <span v-if="store.currentPIDs.length">PID {{ store.currentPIDs.join(', ') }}</span>
+              <span v-if="store.status.discardedCount" class="status-warning">{{ t('status.dropped', { value: store.status.discardedCount }) }}</span>
+              <span v-if="store.error" class="status-error" :title="store.error">{{ store.error }}</span>
+              <span v-else-if="store.notice" class="status-notice" :title="store.notice">{{ store.notice }}</span>
             </div>
-            <n-button
-              class="details-toggle-button"
-              size="small"
-              tertiary
-              :type="detailsPanelOpen ? 'primary' : 'default'"
-              :title="t('details.openAnalysis')"
-              @click="openDetailsPanel('analysis')"
-            >
-              <template #icon>
-                <n-icon :component="AnalyticsOutline" />
-              </template>
-              {{ t('details.detailsAnalysis') }}
-            </n-button>
+            <button v-if="!store.isStaticSource && store.deviceHint" class="link-button connection-link" @click="openSettings('connection')">{{ t('workbench.connectionSettings') }}</button>
           </footer>
 
-          <n-drawer v-model:show="store.presetManagerOpen" :width="360" placement="right">
-            <n-drawer-content :title="t('filter.presets')">
+          <n-drawer v-model:show="settingsOpen" :width="520" placement="right">
+            <n-drawer-content :title="t('workbench.settings')" closable>
+              <n-tabs v-model:value="settingsTab" type="line" animated>
+                <n-tab-pane name="general" :tab="t('workbench.general')">
+                  <div class="settings-form">
+                    <label>{{ t('theme.appearance') }}<n-select :value="themeMode" :options="themeOptions" @update:value="handleThemeModeChange" /></label>
+                    <label>{{ t('language.label') }}<n-select :value="currentLocale" :options="languageOptions" @update:value="handleLocaleChange" /></label>
+                  </div>
+                </n-tab-pane>
+                <n-tab-pane name="connection" :tab="t('device.title')">
+                  <div class="settings-form">
+                    <label>{{ t('source.adbEngine') }}<div class="project-path-row"><n-input v-model:value="store.adbPathInput" :placeholder="t('source.adbPathPlaceholder')" @keyup.enter="store.useADBPath()" /><n-button :loading="store.loading" :aria-label="t('workbench.chooseADB')" @click="store.chooseADBExecutable"><n-icon :component="FolderOpenOutline" /></n-button></div></label>
+                    <div class="panel-inline-actions"><n-button type="primary" :loading="store.loading" @click="store.useADBPath()">{{ t('source.useAdb') }}</n-button><n-button :loading="store.loading" @click="store.useADBPath('')">{{ t('source.autoDetect') }}</n-button></div>
+                    <p class="settings-hint">{{ store.resolvedADBPath || t('common.currentAutoDetect') }}</p>
+                    <n-alert v-if="store.deviceHint" type="warning" :show-icon="false">{{ store.deviceHint }}</n-alert>
+                    <n-button @click="store.refreshDevices">{{ t('workbench.refreshDevices') }}</n-button>
+                    <dl v-if="store.selectedDevice" class="settings-device-info">
+                      <dt>{{ t('device.serial') }}</dt><dd>{{ store.selectedDevice.serial }}</dd>
+                      <dt>{{ t('device.model') }}</dt><dd>{{ store.selectedDevice.model || '-' }}</dd>
+                      <dt>{{ t('device.android') }}</dt><dd>{{ store.selectedDevice.androidVersion || '-' }}</dd>
+                      <dt>{{ t('device.sdk') }}</dt><dd>{{ store.selectedDevice.sdkVersion || '-' }}</dd>
+                      <dt>{{ t('device.abi') }}</dt><dd>{{ store.selectedDevice.abi || '-' }}</dd>
+                      <dt>{{ t('device.currentPid') }}</dt><dd>{{ store.currentPIDs.join(', ') || '-' }}</dd>
+                    </dl>
+                  </div>
+                </n-tab-pane>
+                <n-tab-pane name="workspace" :tab="t('workspace.title')">
+                  <div class="settings-form">
+                    <label>{{ t('workspace.title') }}<n-select :value="store.activeWorkspaceID" :options="store.workspaceOptions" @update:value="handleWorkspaceChange" /></label>
+                    <label>{{ t('workspace.namePlaceholder') }}<n-input v-model:value="store.workspaceName" @blur="store.saveCurrentWorkspace" /></label>
+                    <div class="panel-inline-actions"><n-button type="primary" @click="store.saveCurrentWorkspace">{{ t('workspace.save') }}</n-button><n-button @click="store.createWorkspace">{{ t('workspace.new') }}</n-button><n-button :disabled="store.workspaces.length <= 1" @click="store.deleteCurrentWorkspace">{{ t('workspace.delete') }}</n-button></div>
+                    <details class="settings-advanced"><summary>{{ t('workbench.advanced') }}</summary><n-button tertiary @click="store.resetConfig">{{ t('workspace.reset') }}</n-button></details>
+                  </div>
+                </n-tab-pane>
+                <n-tab-pane name="updates" :tab="t('update.title')">
+                  <div class="settings-form"><span>{{ t('update.currentVersion', { version: appVersion || '-' }) }}</span><n-checkbox v-model:checked="autoCheckUpdates">{{ t('update.autoCheck') }}</n-checkbox><n-checkbox v-model:checked="includePrereleaseUpdates">{{ t('update.includePrerelease') }}</n-checkbox><n-button :loading="checkingUpdates" @click="checkForUpdates(true)">{{ t('update.checkNow') }}</n-button></div>
+                </n-tab-pane>
+              </n-tabs>
+            </n-drawer-content>
+          </n-drawer>
+
+          <n-drawer v-model:show="store.presetManagerOpen" :width="380" placement="right">
+            <n-drawer-content :title="t('filter.presets')" closable>
+              <div class="settings-form"><label>{{ t('filter.namePlaceholder') }}<n-input v-model:value="store.presetDraftName" /></label><n-button type="primary" @click="store.saveCurrentFilter">{{ t('filter.saveCurrent') }}</n-button></div>
               <div class="preset-manager">
                 <div v-for="preset in store.filterPresets" :key="preset.id" class="preset-row">
-                  <n-input
-                    :value="preset.builtIn ? displayPresetName(preset.id, preset.name) : preset.name"
-                    size="small"
-                    :disabled="preset.builtIn"
-                    @update:value="handlePresetNameInput(preset.id, $event)"
-                    @blur="store.renamePreset(preset, preset.name)"
-                  />
-                  <n-button size="small" tertiary @click="store.applyPreset(preset.id)">
-                    {{ t('common.apply') }}
-                  </n-button>
-                  <n-button size="small" tertiary :disabled="preset.builtIn" @click="store.deletePreset(preset.id)">
-                    {{ t('common.delete') }}
-                  </n-button>
+                  <n-input :value="preset.builtIn ? displayPresetName(preset.id, preset.name) : preset.name" size="small" :disabled="preset.builtIn" @update:value="handlePresetNameInput(preset.id, $event)" @blur="store.renamePreset(preset, preset.name)" />
+                  <n-button size="small" tertiary @click="store.applyPreset(preset.id)">{{ t('common.apply') }}</n-button>
+                  <n-button size="small" tertiary :disabled="preset.builtIn" @click="store.deletePreset(preset.id)">{{ t('common.delete') }}</n-button>
                 </div>
               </div>
             </n-drawer-content>
           </n-drawer>
 
+          <n-modal v-model:show="saveSessionOpen" preset="card" class="session-modal" :title="t('source.saveSession')">
+            <div class="settings-form"><label>{{ t('source.sessionNamePlaceholder') }}<n-input v-model:value="store.sessionNameInput" /></label><label>{{ t('source.sessionNotesPlaceholder') }}<n-input v-model:value="store.sessionNotes" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }" /></label><n-alert v-if="saveSessionError" type="error" :show-icon="false">{{ saveSessionError }}</n-alert></div>
+            <template #footer><div class="panel-inline-actions"><n-button @click="saveSessionOpen = false">{{ t('workbench.cancel') }}</n-button><n-button type="primary" :loading="store.sessionLoading" @click="saveSessionAndClose">{{ t('source.saveSession') }}</n-button></div></template>
+          </n-modal>
           <n-modal v-model:show="updateModalOpen" preset="card" class="update-modal" :title="t('update.dialogTitle')">
             <n-alert v-if="updateError" type="error" :show-icon="false">
               {{ updateError }}

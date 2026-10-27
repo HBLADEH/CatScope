@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">CatScope</title>
+  <desc id="desc">蓝青色的猫耳 C 形日志检索标志，结合 Android 触角、三条日志和放大镜。</desc>
+  <g transform="translate(8 -7)">
+    <g id="handle" transform="translate(349 390) rotate(-45)">
+      <rect x="-19" y="-6" width="38" height="89" rx="17" fill="#082B49"/>
+    </g>
+    <g id="antennae">
+      <path d="M210 129L195 88M270 129L285 88" stroke="#082B49" stroke-width="14" stroke-linecap="round"/>
+      <circle cx="194" cy="80" r="15" fill="#082B49"/>
+      <circle cx="286" cy="80" r="15" fill="#082B49"/>
+      <circle cx="194" cy="80" r="7" fill="#00C4DA"/>
+      <circle cx="286" cy="80" r="7" fill="#00C4DA"/>
+    </g>
+    <g id="ears">
+      <g id="left-ear">
+        <path d="M108 209C96 176 88 134 88 89Q88 74 102 81C137 99 165 125 185 153L151 187Z" fill="#082B49"/>
+        <path d="M114 170C108 151 105 133 104 113Q103 105 110 109C128 119 145 133 159 148Z" fill="#00C4DA"/>
+      </g>
+      <g id="right-ear" transform="translate(480 0) scale(-1 1)">
+        <path d="M108 209C96 176 88 134 88 89Q88 74 102 81C137 99 165 125 185 153L151 187Z" fill="#082B49"/>
+        <path d="M114 170C108 151 105 133 104 113Q103 105 110 109C128 119 145 133 159 148Z" fill="#00C4DA"/>
+      </g>
+    </g>
+    <g id="scope">
+      <path d="M356.62 190.88A148 148 0 1 0 356.62 373.12" stroke="#082B49" stroke-width="44" stroke-linecap="round"/>
+      <path d="M356.62 190.88A148 148 0 1 0 356.62 373.12" stroke="#00C4DA" stroke-width="14" stroke-linecap="round"/>
+    </g>
+    <g id="logs" fill="#00C4DA">
+      <rect x="170" y="238" width="154" height="18" rx="9"/>
+      <rect x="170" y="275" width="114" height="18" rx="9"/>
+      <rect x="170" y="312" width="78" height="18" rx="9"/>
+    </g>
+    <g id="assembly-collar" transform="translate(349 390) rotate(-45)">
+      <rect x="-20" y="12" width="40" height="18" rx="4" fill="#00C4DA"/>
+    </g>
+  </g>
+</svg>
