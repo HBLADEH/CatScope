@@ -13,6 +13,7 @@
 - README 文件：
   - `README.md`
   - `README.zh-CN.md`
+  - `README.en.md`
 - Release Notes
 - SHA256 校验文件
 - 真实截图，有就上传；没有就不要放占位图
