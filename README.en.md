@@ -26,14 +26,14 @@ CatScope is a desktop log debugging tool for Android developers. Connect a devic
 
 Chinese is the primary language for the project; an English interface and this guide are also available. Windows is the main supported platform. macOS is available as a universal preview for Intel and Apple Silicon.
 
-![CatScope log workbench](./docs/screenshots/live-logcat.png)
+![CatScope log workbench](./docs/screenshots/log-workbench.jpg)
+
+The screenshot shows the Windows app with a local sample log open.
 
 <details>
-<summary>More screenshots: analysis and build workflows</summary>
+<summary>View issue analysis and AI Context</summary>
 
-| Analysis | Build, install, and launch |
-| --- | --- |
-| <img src="./docs/screenshots/analysis-tab.png" alt="CatScope analysis panel" width="420" /> | <img src="./docs/screenshots/build-install-launch.png" alt="CatScope build, install, and launch panel" width="420" /> |
+![CatScope issue analysis and AI Context](./docs/screenshots/analysis-panel.jpg)
 
 </details>
 

@@ -26,14 +26,14 @@ CatScope 是面向 Android 开发者的桌面日志调试工具。连接设备�
 
 项目以中文用户为主，同时提供英文界面与[英文说明](./README.en.md)。Windows 是主要支持平台，macOS 提供兼容 Intel 和 Apple Silicon 的 universal preview。
 
-![CatScope 日志工作台](./docs/screenshots/live-logcat.png)
+![CatScope 日志工作台](./docs/screenshots/log-workbench.jpg)
+
+上图为 Windows 版打开本地示例日志的实际界面。
 
 <details>
-<summary>更多截图：问题分析与构建安装</summary>
+<summary>查看问题分析与 AI Context 截图</summary>
 
-| 问题分析 | 构建、安装与启动 |
-| --- | --- |
-| <img src="./docs/screenshots/analysis-tab.png" alt="CatScope 问题分析面板" width="420" /> | <img src="./docs/screenshots/build-install-launch.png" alt="CatScope 构建安装启动面板" width="420" /> |
+![CatScope 问题分析与 AI Context](./docs/screenshots/analysis-panel.jpg)
 
 </details>
 
