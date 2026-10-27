@@ -19,9 +19,22 @@ Use this checklist for the current release candidate. Record the actual tag, com
 - [ ] Confirm the app remains usable when adb is missing or misconfigured and shows a recoverable error.
 - [ ] Confirm the version displayed in the app or release package matches the tested build.
 
+## Workbench Layout and Theme
+
+- [ ] At the default 1280px width, common controls occupy two rows, logs remain the main area, and the logo fits both themes.
+- [ ] Restart after changing appearance and language and confirm preferences are restored; search, errors, and selected rows remain readable in both themes.
+- [ ] Live mode shows device and app selectors; offline and session modes show the file or session name and can return to live mode from the source menu.
+- [ ] Configure tags, exclusions, and regex in More filters; active conditions remain visible and can be cleared individually.
+- [ ] Switch between analysis and log details; tabs and the close button remain accessible after scrolling long content.
+- [ ] After filtering other logs, click the selected issue again to relocate it; hidden issue logs have an explanation and a temporary-view action.
+- [ ] Temporarily showing related logs preserves search and filters; Return to filter results restores the original results.
+- [ ] Expand, collapse, and resize the build panel; reopening preserves project path, package, install options, and task output.
+- [ ] Below 1100px, details appear below logs and do not compete with the build panel for the bottom area.
+- [ ] Failed session saves retain the dialog and input; cancelling Save session as preserves the original save path.
+
 ## App Updates
 
-- [ ] Confirm the version in the sidebar matches the Release tag.
+- [ ] Confirm the current version in Settings → App Updates matches the Release tag.
 - [ ] Toggle startup update checks off and on, restart, and confirm the preference is retained.
 - [ ] Confirm the stable channel ignores Preview-only updates and the Preview option can discover them.
 - [ ] Confirm a manual check reports clearly when the current version is up to date.

@@ -2,6 +2,8 @@
 
 This is the CatScope documentation entry point. Chinese is the primary language for user-facing documentation; use the matching English documents where available.
 
+For an overview, downloads, and quick start, see the [Chinese README](../README.md) or [English README](../README.en.md).
+
 ## Use and feedback
 
 | Topic | Document |

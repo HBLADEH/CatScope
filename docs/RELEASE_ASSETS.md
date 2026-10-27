@@ -13,6 +13,7 @@
 - README 文件：
   - `README.md`
   - `README.zh-CN.md`
+  - `README.en.md`
 - Release Notes
 - SHA256 校验文件
 - 真实截图，有就上传；没有就不要放占位图
@@ -65,7 +66,11 @@ macOS 脚本会生成同时支持 Intel Mac 和 Apple Silicon Mac 的 universal 
 
 ## Logo
 
-发布页面请使用 `Logo.png` 或 `docs/assets/logo.png`。不要用 `Logo.candidate.png`，它是带白底的原始候选图。
+`Logo.svg` 是 Logo 的矢量母版，使用深蓝与青色，组合猫耳、Android 触角、C 形放大镜和三条日志。调整造型时优先编辑母版，保持圆环比例、左右耳部对称和日志线条的间距一致。
+
+发布页面请使用 `Logo.png` 或 `docs/assets/logo.png`，两者均为从母版导出的 1024 × 1024 透明 PNG；`build/appicon.png` 使用相同输出，前端品牌区使用 `frontend/src/assets/logo.svg`。修改母版后应同步这三份 PNG 和前端 SVG，并重新导出 Windows 的多尺寸 ICO，检查深浅底色及小尺寸下的边缘与辨识度。
+
+不要用 `Logo.candidate.png`，它是带白底的原始候选图。
 
 ## 截图
 
